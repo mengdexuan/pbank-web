@@ -1,0 +1,124 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <span class="layui-breadcrumb">
+            <a href="{:url('admin/task/index')}">调拨任务概览</a>
+            <a href="{:url('admin/task/view_task',['task_code'=>$task_code])}">任务详情</a>
+            <a href="{:url('admin/task/pack',['task_code'=>$task_code,'pack_code'=>$pack_code])}">任务中的包</a>
+            <a><cite>任务中的捆</cite></a>
+            </span>
+            {if $gzhs}
+            <div class="layui-form-item" style="margin: 10px 0;">
+                <a class="layui-btn layui-btn-normal layui-btn-small" href="{:url('admin/task/download_bundle_file',['bundle_code'=>$data['bundle_code']])}">下载fsn文件</a>
+            </div>
+            {/if}
+            <div class="title-box" style="margin: 10px 0;">
+                <div class="title">捆号 {$bundle_code}</div>
+            </div>
+            <div style="margin-bottom:20px;"><b>FSN文件状态: {$status_str}</b></div>
+            {if $data}
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 金额</label>
+                    <div class="pack-info-text">{:number_format($data['bundle_amount'],2,'.',',')}（面额{$data['valuta']}）</div>
+                </div>
+                <div class="info-inline">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 状态</label>
+                    <div class="pack-info-text">{:get_bundle_status($data['bundle_status'])}</div>
+                </div>
+                <div class="info-inline">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 所属银行</label>
+                    <div class="pack-info-text width-auto">
+                        {if $data['owner_bank'] == get_cur_bank()}
+                        本行
+                        {else}
+                        {:get_bank($data['owner_bank'])}
+                        {/if}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 上传人</label>
+                    <div class="pack-info-text">{$data['op_name']}</div>
+                </div>
+                <div class="info-inline">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 上传时间</label>
+                    <div class="pack-info-text"><?php echo date('Y-m-d H:i:s',$data['op_time'])?></div>
+                </div>
+                <div class="info-inline">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 上传银行</label>
+                    <div class="pack-info-text width-auto">
+                        {if $data['creator_bank'] == get_cur_bank()}
+                        本行
+                        {else}
+                        {:get_bank($data['creator_bank'])}
+                        {/if}
+                    </div>
+                </div>
+            </div>
+            {/if}
+            {if $gzhs}
+            <form class="layui-form layui-form-pane" action="">
+            <div class="layui-form-item">
+                <label class="layui-form-label">冠字号</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="search_code" id="search_code" autocomplete="off" placeholder="" value="" class="layui-input">
+                </div>
+                <div class="layui-input-inline"><div class="line-text">冠字号码（{$gzhs['count']}个）</div></div>
+            </div>
+            </form>
+            <div class="bundle-box">
+                {volist name="gzhs['gzh_codes']" id="vo"}
+                <div class="gzh" item-val="{$vo}">{$vo}</div>
+                {/volist}
+            </div>
+            {/if}
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    $("#search_code").keyup(function(){
+        var filterRows = $(".gzh");
+
+        var filterVal = $.trim($(this).val());
+        if(filterVal == ""){
+            filterRows.each(function(){
+                $(this).text($.trim($(this).attr("item-val")));
+                $(this).css("opacity", 1);
+                $(this).show();
+            });
+        }else{
+            filterVal = filterVal.toUpperCase();
+            filterRows.each(function(){
+                var gzhCode = $.trim($(this).attr("item-val"));
+                var gzhCodeUp = gzhCode.toUpperCase();
+                var startIdx = gzhCodeUp.indexOf(filterVal);
+                //console.log(startIdx);
+                if(startIdx == -1){
+                    $(this).css("opacity", .5);
+                    $(this).hide();
+                }else{
+                    var prefix = "";
+                    if(startIdx != 0){
+                        prefix = gzhCode.substring(0, startIdx);
+                    }
+                    var len = filterVal.length;
+                    var hightlight = gzhCode.substr(startIdx, len);
+                    var suffix = "";
+                    if(startIdx+len < gzhCode.length){
+                        suffix = gzhCode.substring(startIdx+len);
+                    }
+                    $(this).html(prefix+"<span style='color:#a94442;font-weight:bold;'>"+hightlight+"</span>"+suffix);
+                    $(this).css("opacity", 1);
+                    $(this).show();
+                }
+            });
+        }
+    }).keyup();
+</script>
+{/block}

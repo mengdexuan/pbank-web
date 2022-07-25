@@ -1,0 +1,130 @@
+{extend name="base" /}
+{block name="body"}
+<style>
+    .task_dialog_div {
+        width: 100%;
+        min-height: 36px;
+        margin: 10px 0 0 0;
+        line-height: 36px;
+    }
+    .task_dialog_div:nth-child(1) {
+        margin-top: 20px;
+    }
+    .task_dialog_div label {
+        display: inline-block;
+        width: 110px;
+        height: 36px;
+        padding: 0 10px 0 0;
+        text-align: right;
+    }
+    .task_dialog_div span {
+        display: inline-block;
+        width: auto;
+        height: 36px;
+        line-height: 36px;
+    }
+    .task_dialog_div select {
+        display: inline-block;
+        width: 150px;
+        height: 32px;
+        line-height: 32px;
+        border: 1px solid #ccc;
+    }
+</style>
+
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <span class="layui-breadcrumb">
+                <a href="{:url('iframe/report/index',['bank_code'=>$bank_key,'bankCode'=>$bank_code])}">报表列表</a>
+                <a><cite>{:show_report_name($reportNum)}</cite></a>
+            </span>
+
+            <div class="layui-tab-item layui-show">
+                <table class="new-table" id="data_table">
+                    <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>项目</th>
+                        <th>填写状态</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td colspan="4" style="text-align: center">暂无数据</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div id="page_box"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+    // 获取任务列表 start
+    function search(curr){
+        layer.load(2);
+        var gzh_code = $.trim($('.gzh_code').val());
+        var url = "__ROOT__/api/report/tasks";
+        var op = {
+            reportNum : "{$reportNum}",
+            curPage: curr || 1,
+            curNum : 20,
+            bankCode: "{$bank_code}"
+        };
+
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var tasks = data.tasks;
+            var html_str = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < tasks.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td>"+tasks[i].id+"</td>";
+                    if( "{$reportNum}" == "R0003" ){
+                        html_str = html_str + "<td>"+tasks[i].reportYear+"年</td>";
+                    }else{
+                        html_str = html_str + "<td>"+tasks[i].reportYear+'年第'+tasks[i].reportTime+"季度</td>";
+                    }
+
+                    if( tasks[i].fillInCount > 0 ){
+                        html_str = html_str + "<td>已填写</td>";
+                        html_str = html_str + '<td><a href="__ROOT__/iframe/report/{:set_report_file($reportNum)}_edit/bankCode/{$bank_code}/bank_code/{$bank_key}/year/'+tasks[i].reportYear+'/quarter/'+tasks[i].reportTime+'/reportNum/{$reportNum}.html" >修改</a>&nbsp;&nbsp;&nbsp;&nbsp;<a href="__ROOT__/iframe/report/{:set_report_file($reportNum)}_detail/bankCode/{$bank_code}/bank_code/{$bank_key}/year/'+tasks[i].reportYear+'/quarter/'+tasks[i].reportTime+'/reportNum/{$reportNum}.html" >查看</a></td>';
+                    }else{
+                        html_str = html_str + "<td class='red'>未填写</td>";
+                        html_str = html_str + '<td><a href="__ROOT__/iframe/report/{:set_report_file($reportNum)}_add/bankCode/{$bank_code}/bank_code/{$bank_key}/reportNum/{$reportNum}/year/'+tasks[i].reportYear+'/quarter/'+tasks[i].reportTime+'.html" >填写</a></td>';
+                    }
+
+                    html_str = html_str + '</tr>';
+                }
+                if(html_str !=''){
+                    html_str = html_str+'</div>';
+                }
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.totalPage, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = '<tr><td colspan="4" style="text-align: center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="location = location">刷新</a></td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+        });
+    };
+    search();
+    // 获取任务列表 end
+</script>
+{/block}

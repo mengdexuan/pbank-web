@@ -1,0 +1,403 @@
+{extend name="base" /}
+{block name="body"}
+
+<style type="text/css">
+    .checkTime{
+        color: blue;
+    }
+    .children{
+        margin-top:5px; 
+    }
+.layui-btn-smalls {
+    height: 32px;
+    line-height: 32px;
+    padding: 0px;
+    font-size: 12px;
+}
+.w32 {
+    width: 32px!important;
+    text-align: center;
+}
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <form class="" id="search" action="{:url('admin/cabinet/detail')}"  style="display:block;width:100%;background:#fff;position:fixed;top:65px;padding-top:15px;z-index:1000;">
+                <div class="layui-form-item">
+                    <div class="layui-input-inline" style="width: 36px;">
+                        <span href="javascript:;" class="layui-btn-smalls" id="before">时间：</span>
+                    </div>
+                    <div class="layui-input-inline date-box">
+                        <input type="text" name="beginTime" placeholder="开始日期" id="beginTime"  value="{$query_date}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                    </div>
+                    <div class="layui-input-inline wa date-center">-</div>
+                    <div class="layui-input-inline date-box">
+                        <input type="text" name="endTime" placeholder="结束日期" id="endTime"  value="{$query_date_end}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                    </div>
+                    <div class="layui-input-inline" style="width: 70px;">
+                        <span class=" layui-btn-smalls"><a href="javascript:;" class="{if($checkTime == 'today')}checkTime{/if} addKeyword" id="today">今天</a>&nbsp&nbsp|&nbsp&nbsp最近:</span>
+                    </div>
+                    <div class="layui-input-inline w32">
+                        <a href="javascript:;" class="layui-btn-smalls {if($checkTime == 'week')}checkTime{/if} addKeyword" id="week">1周</a>
+                    </div>
+                    <div class="layui-input-inline w32">
+                        <a href="javascript:;" class="layui-btn-smalls {if($checkTime == 'month')}checkTime{/if} addKeyword" id="month">1个月</a>
+                    </div>
+                    <div class="layui-input-inline w32">
+                        <a href="javascript:;" class="layui-btn-smalls {if($checkTime == 'tmonth')}checkTime{/if} addKeyword" id="tmonth">3个月</a>
+                    </div>
+                    <div class="layui-input-inline" style="width: 46px;margin-bottom: 0px;line-height: 32px;">
+                        关键词:
+                    </div>
+                    <div class="layui-input-inline w170">
+                        <input type="text" name="keyword" autocomplete="off" placeholder="输入商行名称、网点名称" value="{$keyword}" class="layui-input keyword">
+                    </div>
+                    <div class="layui-input-inline w70">
+                        <input type="submit" name="search" class="layui-btn layui-btn-small search" value="查询">
+                    </div>
+                </div>
+                <input type="hidden" name="query_date" value="{$checkTime}">
+            </form>
+        </div>
+        <br/> <br/> <br/> <br/> <br/>
+        {if isset($data) && !empty($data)}
+            <table class="layui-table">
+              <thead>
+                <tr>
+                  <th width="30%">商行名称</th>
+                  <th width="55%">笔数</th>
+                  <th width="15%">捆/把数</th>
+                </tr>   
+              </thead>
+              <tbody>
+              {foreach name='data' item='vo'}
+                    <tr class="parent" bankCode="{$vo['bankCode']}">
+                      <td><span class="show"><img src="__STATIC__/images/jia.png" width="18px;" height="18px;" style="margin-bottom: 3px;margin-right: 4px;cursor: pointer;"></span>{$vo['bankName']}</td>
+                      <td><a href='javascript:;' class='fGetDataByNum'>{$vo['num']}</a></td>
+                      <td>{$vo['bundleNum']}捆 + {$vo['handleNum']}把(￥{:number_format($vo['amount'],2,'.',',')})</td>
+                    </tr>
+                    <tbody class="tow{$vo['bankCode']}"></tbody>
+               {/foreach}
+              </tbody>
+            </table>
+            <div id="page_box"></div>
+            {else}
+            <table class="layui-table">
+              <tbody>
+                <tr>
+                  <td colspan="3" class="text-center">暂无数据</td>
+                </tr>
+              </tbody>
+            </table>
+        {/if}
+    </div>
+</div>
+<ul id="demo">
+  <li>1</li>
+  <li>2</li>
+  <li>6</li>
+</ul>
+{/block}
+{block name="script"}
+<script type="text/javascript">
+    var requestUrl = "{$requestUrl}";
+    $('.addKeyword').mouseover(function(){
+        var keyword = $('input[name="keyword"]').val();
+        var _thisVal = $(this).attr('id');
+        if (keyword) {
+            $(this).attr('href','__ROOT__/admin/cabinet/detail.html?query_date='+_thisVal+'&keyword='+keyword);
+        }else{
+           $(this).attr('href','__ROOT__/admin/cabinet/detail.html?query_date='+_thisVal); 
+        }
+    });
+    var allData = $('.parent').length;
+    //总页数
+    var pages = "{$totalPage}";
+    //当前页
+    var page = "{$page}";
+    var beginTime = "{$query_date}";
+    var query_date = "{$checkTime}";
+    var endTime = "{$query_date_end}";
+    var keyword = "{$keyword}";
+    var url = '';
+    var times = 1;
+    if (keyword) {
+        url += '&keyword='+keyword;
+    }
+    if (beginTime) {
+        url += '&beginTime='+beginTime;
+    }
+    if (query_date) {
+        url += '&query_date='+query_date;
+    }
+    if (endTime) {
+        url += '&endTime='+endTime;
+    }
+
+    if (allData) {
+        laypage({
+                cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                pages: pages, //通过后台拿到的总页数
+                curr: page, //当前页
+                jump: function(obj, first){ //触发分页后的回调
+                    if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                        if (url) {
+                            obj.curr += url;
+                            url += obj.curr;
+                        }
+                        window.location.href="__ROOT__/admin/cabinet/detail.html?page="+obj.curr;
+                    }
+                }
+        });
+    }
+
+    //隐藏二级
+    $(document).on('click','.hide',function(){
+        var bankCode = $(this).parent().parent().attr('bankCode');
+        $(this).removeClass('hide').addClass('show').find('img').css({'width':'18px','height':'18px'}).attr('src','__STATIC__/images/jia.png');
+
+        $('.tow'+bankCode).html('');
+    });
+
+    //显示二级
+    $(document).on('click','.show',function(){
+        var bankCode = $(this).parent().parent().attr('bankCode');
+        var elem = $('.tow'+bankCode).after();
+        weterfall(elem,tbody=false,bankCode);
+        $(this).removeClass('show').addClass('hide').find('img').css({'width':'16px','height':'16px'}).attr('src','__STATIC__/images/jian.png');
+    });
+
+    //遮罩层显示二级
+    $(document).on('click','.fGetDataByNum',function(){
+        var bankCode = $(this).parent().parent().attr('bankCode');
+        var page = 1;
+        var elem = '#layui-layer'+times;
+        times = Number(times) + 1;
+        layer.open({
+          title:'查看网点明细',
+          anim:2,
+          area: '1000px',
+          btn:[],
+          maxmin: true,
+          content: '',
+          offset:'100px'
+        });  
+
+        weterfall(elem,tbody=true,bankCode);
+    });
+
+    //隐藏三级
+    $(document).on('click','.hideThree',function(){
+        var branchCode = $(this).parent().parent().attr('branchCode');
+        $(this).removeClass('hideThree').addClass('showThree').find('img').css({'width':'18px','height':'18px'}).attr('src','__STATIC__/images/jia.png');
+        $(this).parent().parent().parent().find('.children').nextAll().remove();   
+    });
+
+    //显示三级
+    $(document).on('click','.showThree',function(){
+        var branchCode = $(this).parent().parent().attr('branchCode');
+        var page = $(this).parent().parent().attr('page');
+        var elem = $(this).parent().parent().parent().after();
+        weterfallThree(page,elem,tbody=false,branchCode);
+        $(this).removeClass('showThree').addClass('hideThree').find('img').css({'width':'16px','height':'16px'}).attr('src','__STATIC__/images/jian.png');
+    });
+    //遮罩层显示三级
+    $(document).on('click','.cGetDataByNum',function(){
+        var branchCode = $(this).parent().parent().attr('branchCode');
+        var page = $(this).parent().parent().attr('page');
+        var elem = '#layui-layer'+times;
+        times = Number(times) + 1;
+        layer.open({
+          title:'查看网点明细',
+          anim:2,
+          area: '1000px',
+          btn:[],
+          maxmin: true,
+          content: '',
+          offset:'100px'
+        });  
+        weterfallThree(page,elem,tbody=true,branchCode);
+    });
+    function weterfallThree(newPage,elem,tbody=false,branchCode){
+          layui.use('flow', function(){
+          var $ = layui.jquery;
+          var flow = layui.flow;
+          var end = '我是有底线的～';
+          if (!tbody) {
+            var end = '<span></span>';  
+          }
+          flow.load({
+            elem: elem, 
+            isAuto:false,
+            end:end,
+            done: function(page, next){ 
+              if(newPage) {
+                var page = newPage;
+              }
+              var lis = [];
+              $.get('__ROOT__/admin/cabinet/three?page='+page+url+'&branchCode='+branchCode+'&keyword='+keyword, function(res){
+                if (!res.success) {
+                    layer.msg(res.msg);
+                }
+                if (res.data === null || res.data.list === null) {
+                    layer.msg('无数据');
+                    setTimeout(function(){
+                        location.href=requestUrl;
+                    },1000)
+                }
+                var html_str = '';
+                if (tbody) {
+                    if (page == 1) {
+                        var html_str = '<table class="layui-table"><thead><tr><th width="30%">信息</th><th width="50%">捆/把号</th><th width="20%">时间</th></tr></thead><tbody>';
+                    }else{
+                        var html_str = '<table class="layui-table"><thead><tr><th width="30%"></th><th width="50%"></th><th width="20%"></th></tr></thead><tbody>';
+                    }
+                }
+                layui.each(res.data.list, function(index, item){
+                    if (tbody) {
+                        html_str = html_str + '<tbody class=three'+item.branchCode+'>';
+                    }  
+                    html_str = html_str + "<tr class='children' bankCode='"+item.bankCode+"' branchCode='"+item.branchCode+"' page='"+page+"'>";
+                    html_str = html_str + "<td>&nbsp&nbsp&nbsp&nbsp&nbsp<ul><li>流水号："+item.serialNum+"</li><li>身份证号："+item.idCard+"</li><li>银行卡号："+item.bankCard+"</li></ul></td>";
+                    contentArr = item.content.split(',');
+                    var contentA = '';
+                    $.each(contentArr,function(i,t){
+                        contentA += "<span style='border:1px solid grey;margin:5px;color:#7DCFC5;display:inline-block;line-height:20px;'>"+t+"</span>";
+                    });
+                    html_str = html_str + "<td  style='word-break:break-all;'>"+contentA+"</td>";
+                    html_str = html_str + "<td>"+item.submitTime+"</td>";
+                    html_str = html_str + '<tr>';
+                    if (tbody) {
+                        html_str = html_str + '</tbody>';
+                    }     
+                }); 
+                if (tbody) {
+                    html_str = html_str + '</tbody></table>';
+                }  
+                if(html_str == ''){
+                    html_str = '<td colspan="3" style="text-align: center">暂无数据</td>';
+                }else{
+                    lis.push(html_str);
+                }
+                next(lis.join(''), page < res.data.totalPage); 
+                newPage = false; 
+                // newPage = Number(page) + 1; 
+              });
+            }
+          });
+        });
+        $('.layui-layer-dialog').css({'height':'80%','overflow':'auto'});           
+    }
+    /**
+    *瀑布加载 二级
+    *url 请求路径和参数
+    *elem 瀑布渲染节点
+    *tbody 是否有table
+    */
+    function weterfall(elem,tbody=false,bankCode){
+          layui.use('flow', function(){
+          var $ = layui.jquery;
+          var flow = layui.flow;
+          var end = '我是有底线的～'
+          flow.load({
+            elem: elem, 
+            isAuto:false,
+            end:end,
+            done: function(page, next){ 
+              var lis = [];
+              $.get('__ROOT__/admin/cabinet/amount?page='+page+url+'&bankCode='+bankCode+'&keyword='+keyword, function(res){
+                if (!res.success) {
+                    layer.msg(res.msg);
+                }
+                if (res.data === null || res.data.list === null) {
+                    layer.msg('无数据');
+                    setTimeout(function(){
+                        location.href=requestUrl;
+                    },1000)
+                }
+                var html_str = '';
+                if (tbody) {
+                    if (page==1) {
+                        var html_str = '<table class="layui-table"><thead><tr><th>支行名称</th><th>笔数</th><th>捆/把数</th></tr></thead><tbody>';
+                    }else{
+                        var html_str = '<table class="layui-table"><tbody>'; 
+                    }
+                }
+                layui.each(res.data.list, function(index, item){
+                    if (tbody) {
+                        html_str = html_str + '<tbody class=three'+item.branchCode+index+'>';
+                    }  
+                    html_str = html_str + "<tr class='children' bankCode='"+item.bankCode+"' branchCode='"+item.branchCode+"' page='"+page+"'>";
+
+                    if (tbody) {
+                        html_str = html_str + '<td width="30%"><span class="showThree"><img src="__STATIC__/images/jia.png" width="18px;" height="18px;" style="margin-bottom: 3px;margin-right: 4px;cursor: pointer;"></span>'+item.branchName+'</td>';
+                    }else{
+                        html_str = html_str + "<td width='30%'>&nbsp&nbsp&nbsp&nbsp&nbsp"+item.branchName+"</td>";
+                    }
+                    if (tbody) {
+                        // html_str = html_str + "<td width='50%'><a href='javascript:;' class='' style='color:grey;cursor:none;'>"+item.num +"</a></td>";
+                        html_str = html_str + "<td width='50%'><a href='javascript:;' class='cGetDataByNum'>"+item.num +"</a></td>";
+                    }else{
+                        html_str = html_str + "<td width='50%'><a href='javascript:;' class='cGetDataByNum'>"+item.num +"</a></td>";
+                    }
+                    
+                    html_str = html_str + "<td width='20%'>"+item.bundleNum+'捆 + '+item.handleNum+'把(￥'+number_format(item.amount,2,'.',',')+')' +"</td>";
+                    html_str = html_str + '<tr>';
+                    if (tbody) {
+                        html_str = html_str + '</tbody>';
+                    }                 
+                }); 
+                if (tbody) {
+                    html_str = html_str + '</tbody></table>';
+                }  
+                if(html_str == ''){
+                    html_str = '<td colspan="3" style="text-align: center">暂无数据</td>';
+                }else{
+                    lis.push(html_str);
+                    
+                }
+                next(lis.join(''), page < res.data.totalPage);    
+              });
+            }
+          });
+        });       
+       $('.layui-layer-dialog').css({'height':'80%','overflow':'auto'});  
+    }
+
+</script>
+<script>
+//时间插件
+    var _type = 'today';
+    var start = {
+        elem:'focus',
+        istoday: true
+        ,choose: function(datas){
+            $('.layui-input-inline').find('.quick').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        }
+    };
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    document.getElementById('endTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+
+    function getDate (str){
+        var y = str.getFullYear();
+        var m = Number(str.getMonth())+1;
+        if(m.toString().length<2){
+            m = '0'+m;
+        }
+        var d = str.getDate();
+        if(d.toString().length<2){
+            d = '0'+d;
+        }
+        var date = y + '-' + m + '-' + d;
+        return date;
+    }
+</script>
+<script src="__JS__/jquery.circliful.min.js"></script>
+{/block}

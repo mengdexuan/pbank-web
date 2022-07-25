@@ -1,0 +1,143 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+
+            <input type="hidden" value="{$gzh}" class="gzh">
+            <input type="hidden" value="{$bundle_code}" class="bundle_code">
+            <span class="layui-breadcrumb">
+            <a href="{:url('admin/gzh/index',['gzh'=>$gzh])}">冠字号查询</a>
+            <a href="{:url('admin/gzh/gzh',['gzh'=>$gzh])}">{$gzh}</a>
+            <a><cite>捆流转详情</cite></a>
+            </span>
+
+
+            <div class="title-box">
+                <div class="title">冠字号: {$gzh}</div>
+            </div>
+
+            <div class="title-box">
+                <div class="title">捆号: {$bundle_code}</div>
+            </div>
+            {if $data}
+            <div class="layui-tab-item layui-show">
+
+                <table class="new-table" id="data_table">
+                    <thead>
+                    <tr>
+                        <th>任务时间</th>
+                        <th>任务号</th>
+                        <th>从发出行-到目的行</th>
+                        <th></th>
+                        <th>任务状态</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td colspan="5" style="text-align: center">暂无数据</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div id="page_box"></div>
+            </div>
+            {else}
+            {if $is_search == 1}
+            查询无结果
+            {/if}
+            {/if}
+        </div>
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+{if $data}
+<script>
+    $('.search').click(function(){
+        search();
+    });
+    function search(curr){
+        layer.load(2);
+        var gzh_code = $.trim($('.gzh_code').val());
+        var url = "__ROOT__/api/bank/query_task_bundle";
+        var op = {
+            cur_page: curr || 1,
+            bundle_code:$('.bundle_code').val()
+            //cur_num: 1 //向服务端传的参数，此处只是演示
+        };
+
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var tasks = data.tasks;
+            var html_str = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < tasks.length; i++){
+                    var color = 'red';
+                    if(tasks[i].task_status == 3){
+                        color = 'green';
+                    }
+                    html_str = html_str + "<tr>";
+                    html_str = html_str + "<td>"+tasks[i].task_time+"</td>";
+                    html_str = html_str + '<td><a href="__ROOT__/admin/task/view_task/task_code/'+tasks[i].task_code+'.html" >'+tasks[i].task_code+'</a></td>';
+                    html_str = html_str + "<td class='two'><i class='icon_bolck_r_14'></i>从 - "+tasks[i].out_bank_str+"<br><i class='icon_bolck_g_14'></i>到 - "+tasks[i].in_bank_str+"</td>";
+                    html_str = html_str + "<td class='two'><i class='icon_bolck_r_14'></i>出库时间 - "+tasks[i].out_time+"<br><i class='icon_bolck_g_14'></i>入库时间 - "+tasks[i].in_time+" </td>";
+                    html_str = html_str + "<td class='"+color+"'>"+tasks[i].task_status_str+"</td>";
+                    html_str = html_str + '<tr>';
+                }
+                if(html_str == ''){
+                    html_str = '<td colspan="7" style="text-align: center">暂无数据</td>';
+                }
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = '<tr><td colspan="5" style="text-align: center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="location = location">刷新</a></td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+        });
+    };
+    //运行
+    search();
+</script>
+{/if}
+<script>
+    var dom_pack = $('.pack_code');
+    dom_pack.on("keypress", function(e){
+        var kc = e.which || e.keyCode;
+        if(kc == 13){
+
+            var thisval = $.trim($(this).val());
+            try{
+                thisval = JSON.parse(thisval).bc;
+                if($.trim(thisval) != ''){
+                    $(this).val(thisval);
+                }
+            }catch(e){
+
+            }
+
+        }
+    }).focus().select();
+    $('#pack_form').submit(function () {
+        thisval = $.trim(dom_pack.val());
+//        if(!(new RegExp("^B[a-zA-Z0-9]{4}[0-9]{10}$")).test(thisval)){
+//            $("#pack-code-scan").select();
+//            layer.msg('包号格式不正确！');
+//            return false;
+//        }
+    })
+</script>
+{/block}

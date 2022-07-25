@@ -1,0 +1,126 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <span class="layui-breadcrumb">
+            <a href="{:url('admin/gzh/index',['gzh'=>$gzh])}">冠字号查询</a>
+            <a><cite>{$gzh}</cite></a>
+            </span>
+            <input type="hidden" value="{$gzh}" class="gzh_code">
+            {if $data}
+            <div class="layui-tab-item layui-show">
+
+                <table class="new-table" id="data_table">
+                    <thead>
+                    <tr>
+                        <th>清分时间</th>
+                        <th>所在捆号</th>
+                        <th>清分行 -所属行</th>
+                        <th>操作</th>
+
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td colspan="5" class="text-center">查询中</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div id="page_box"></div>
+            </div>
+            {else}
+            {if $is_search == 1}
+            <span class="red">查询无结果</span>
+            {/if}
+            {/if}
+        </div>
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+{if $data}
+<script>
+    $('.search').click(function(){
+        search();
+    });
+    function search(curr){
+        layer.load(2);
+        var gzh_code = $.trim($('.gzh_code').val());
+        var url = "__ROOT__/api/bank/query_bundle_gzh";
+        var op = {
+            cur_page: curr || 1,
+            gzh:gzh_code
+            //cur_num: 1 //向服务端传的参数，此处只是演示
+        };
+
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var bundles = data.bundles;
+            var html_str = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < bundles.length; i++){
+                    html_str = html_str + "<tr>";
+                    html_str = html_str + "<td>"+bundles[i].op_time+"</td>";
+                    html_str = html_str + "<td>"+bundles[i].bundle_code+"</td>";
+                    html_str = html_str + "<td class='two'><i class='icon_bolck_r_14'></i>清分行 - "+bundles[i].creator_bank_str+"<br><i class='icon_bolck_g_14'></i>所属行 - "+bundles[i].owner_bank_str+"</td>";
+                    html_str = html_str + '<td><a href="__ROOT__/admin/gzh/info/gzh/'+gzh_code+'/bundle_code/'+bundles[i].bundle_code+'.html" >查看</a></td>';
+                    html_str = html_str + '<tr>';
+                }
+                if(html_str !=''){
+                    html_str = html_str+'</div>';
+                }
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = '<tr><td colspan="5" style="text-align: center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="location = location">刷新</a></td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+        });
+    };
+    //运行
+    search();
+</script>
+{/if}
+<script>
+    var dom_pack = $('.pack_code');
+    dom_pack.on("keypress", function(e){
+        var kc = e.which || e.keyCode;
+        if(kc == 13){
+
+            var thisval = $.trim($(this).val());
+            try{
+                thisval = JSON.parse(thisval).bc;
+                if($.trim(thisval) != ''){
+                    $(this).val(thisval);
+                }
+            }catch(e){
+
+            }
+
+        }
+    }).focus().select();
+    $('#pack_form').submit(function () {
+        thisval = $.trim(dom_pack.val());
+//        if(!(new RegExp("^B[a-zA-Z0-9]{4}[0-9]{10}$")).test(thisval)){
+//            $("#pack-code-scan").select();
+//            layer.msg('包号格式不正确！');
+//            return false;
+//        }
+    })
+</script>
+{/block}

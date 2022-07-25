@@ -1,0 +1,216 @@
+{extend name="base" /}
+{block name="body"}
+<style>
+    .data_row input {
+         width: 100%;
+         text-align: right;
+         border: none;
+     }
+    input.border {
+        border: 1px solid #333;
+        text-align: left;
+    }
+    #cancel,#submit {
+        display: none;
+    }
+
+</style>
+<!--tab标签-->
+<div class="layui-tab layui-tab-brief">
+    <div class="layui-tab-content">
+        <span class="layui-breadcrumb">
+            <a href="{:url('iframe/report/index',['bank_code'=>$bank_key,'bankCode'=>$bank_code])}">报表列表</a>
+            <a href="{:url('iframe/report/list',['reportNum'=>$reportNum,'bank_code'=>$bank_key,'bankCode'=>$bank_code])}">{:show_report_name($reportNum)}</a>
+            <a><cite>修改</cite></a>
+        </span>
+        <table class="layui-table report">
+            <caption>{$data['year']}年{:show_report_name($reportNum)}</caption>
+            <caption class="t-tip">单位：元</caption>
+            <thead>
+            <tr>
+                <th rowspan="2" width="12.5%">券别</th>
+                <th width="12.5%">计划年度年初完整券库存</th>
+                <th width="12.5%">计划年度现金净投放</th>
+                <th width="12.5%">计划年度次年元旦至春节现金净投放</th>
+                <th width="12.5%">计划年度残损人民币上缴</th>
+                <th width="12.5%">计划年度次年元旦至春节残损人民币缴款</th>
+                <th width="12.5%">取款/缴款计划</th>
+                <th rowspan="2" width="12.5%">备注</th>
+            </tr>
+            <tr>
+                <th>(1)</th>
+                <th>(2)</th>
+                <th>(3)</th>
+                <th>(4)</th>
+                <th>(5)</th>
+                <th>(8)=(2)+(3)+(4)+(5)-(1)</th>
+            </tr>
+            </thead>
+            <tbody>
+            {volist name="$data['tableData']" id="vo"}
+            <tr class="data_row">
+                <td class="c"><input type="text" class="rowCode" value="{$vo['rowCode']}" readonly style="display:none;">{:get_report_name($reportNum,$vo['rowCode'])}</td>
+                <td class="c"><input data-type="2" type="number" min="0" max="99999999" class="fullYearVoucherStock" value="{:number_to_word2($vo['fullYearVoucherStock'])}" readonly></td>
+                <td class="c"><input data-type="1" type="number" min="0" max="99999999" class="netCashPy" value="{:number_to_word2($vo['netCashPy'])}" readonly></td>
+                <td class="c"><input data-type="1" type="number" min="0" max="99999999" class="netCash" value="{:number_to_word2($vo['netCash'])}" readonly></td>
+                <td class="c"><input data-type="1" type="number" min="0" max="99999999" class="damagePaidPy" value="{:number_to_word2($vo['damagePaidPy'])}" readonly></td>
+                <td class="c"><input data-type="1" type="number" min="0" max="99999999" class="damagePaid" value="{:number_to_word2($vo['damagePaid'])}" readonly></td>
+                <td class="c"><input data-type="" type="text" min="0" class="plan" value="{:number_to_word2($vo['planAmount'])}" readonly></td>
+                <td class="c"><input data-type="3" type="text" class="remark" value="{$vo['remark']}" readonly></td>
+            </tr>
+            {/volist}
+            </tbody>
+            <tfoot>
+            <tr>
+                <td class="c">合计</td>
+                <td class="fullYearVoucherStockSum"></td>
+                <td class="netCashPySum"></td>
+                <td class="netCashSum"></td>
+                <td class="damagePaidPySum"></td>
+                <td class="damagePaidSum"></td>
+                <td class="planSum"></td>
+                <td class=""></td>
+            </tr>
+            </tfoot>
+        </table>
+        <div style="text-align:center;">
+            <button class="layui-btn layui-btn-small" id="edit">修改</button>
+            <button class="layui-btn layui-btn-small" id="cancel">取消</button>
+            <button class="layui-btn layui-btn-small" id="submit">提交</button>
+        </div>
+
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+    $(function(){
+        /*自动计算金额*/
+        function setNum(a,t){
+            var num = 0;
+            var class1 = '.'+a;
+            var class2 = '.'+a+'Sum';
+            $(class1).each(function(){
+                var value = $(this).val();
+                if(t == 1 || t == 2 ) {
+                    if(value>99999999){
+                        layer.msg('输入的金额过大！');
+                        $(this).val('');
+                        return false;
+                    }
+                    if(value<0){
+                        layer.msg('输入的金额不能小于0！');
+                        $(this).val('');
+                        return false;
+                    }
+                    var length = $(this).val().length;
+                    var first = value.indexOf(".");
+                    if( first>0 && length - first >5 ){
+                        layer.msg('输入的金额过小！');
+                        $(this).val('');
+                        return false;
+                    }
+                }
+                num += Number($(this).val()*10000);
+            });
+            $(class2).html(num/10000);
+            if(t == 1 || t == 2 ) {
+                total();
+                setNum('plan');
+            }
+        }
+        /*计算取款计划 plan*/
+        function total(){
+            $('tr').each(function(){
+                var m = 0;
+                var t = $(this).find('input[data-type="1"]');
+                $(t).each(function(){
+                    m += Number($(this).val())
+                });
+
+                var n = $(this).find('input[data-type="2"]').val();
+                $(this).find('.plan').val(Number(m-n));
+            })
+        }
+
+        /*自执行函数---在查看和修改里面需要用*/
+        setNum('fullYearVoucherStock');
+        setNum('netCashPy');
+        setNum('netCash');
+        setNum('damagePaidPy');
+        setNum('damagePaid');
+        setNum('plan');
+
+        $('tbody tr td input').each(function(){
+            var a = $(this).attr('class');
+            var t = $(this).attr('data-type');
+            $(this).bind('input propertychange', function() { setNum(a,t); });
+            $(this).blur(function(){ setNum(a,t); });
+            $(this).on('keypress',function(){ setNum(a,t); });
+        });
+
+
+        /*修改*/
+        $('#edit').click(function(){
+            $(this).hide();
+            $("#submit").show();
+            $("#cancel").show();
+            $('input[type="number"]').addClass('border').removeAttr('readonly');
+            $('.remark').addClass('border').removeAttr('readonly');
+        });
+        /*取消*/
+        $('#cancel').click(function(){
+            $(this).hide();
+            $("#submit").hide();
+            $("#edit").show();
+            $('input[type="number"]').removeClass('border').attr('readonly','readonly');
+            $('.remark').removeClass('border').attr('readonly','readonly');
+            window.location.href = '';
+        });
+        /*修改-提交*/
+        $("#submit").click(function(){
+            var bankCode = "{$bank_code}";
+            var year = {$data['year']};
+            var tableData = '';
+            $('.data_row').each(function(){
+                var rowCode = $(this).find('td .rowCode').val();
+                var remark = $(this).find('td .remark').val();
+                var fullYearVoucherStock = $(this).find('td .fullYearVoucherStock').val()*10000;
+                var damagePaid = $(this).find('td .damagePaid').val()*10000;
+                var netCash = $(this).find('td .netCash').val()*10000;
+                var netCashPy = $(this).find('td .netCashPy').val()*10000;
+                var damagePaidPy = $(this).find('td .damagePaidPy').val()*10000;
+                if (fullYearVoucherStock == '') { fullYearVoucherStock = 0; }
+                if (damagePaid == '') { damagePaid = 0; }
+                if (netCash == '') { netCash = 0; }
+                if (netCashPy == '') { netCashPy = 0; }
+                if (damagePaidPy == '') { damagePaidPy = 0; }
+                tableData += '{rowCode:"'+rowCode+'",fullYearVoucherStock:'+fullYearVoucherStock+',damagePaid:'+damagePaid+',netCash:'+netCash+',netCashPy:'+netCashPy+',damagePaidPy:'+damagePaidPy+',remark:"'+remark+'"},'
+            });
+            tableData = '[' + tableData + ']';
+            tableData = tableData.replace(",]","]");
+            $.ajax({
+                url: '__ROOT__/api/report/cash_delivery_modify',
+                data:{
+                    bankCode: bankCode,
+                    year: year,
+                    tableData: tableData
+                },
+                type: "post",
+                data_type:'json',
+                success: function (info) {
+                    if (info.err_code == 0) {
+                        setTimeout(function () {
+                            window.location.href = '';
+                        }, 1000);
+                        layer.msg('修改成功');
+                    }else {
+                        layer.msg(info.err_msg);
+                    }
+                }
+            });
+        });
+    })
+</script>
+{/block}

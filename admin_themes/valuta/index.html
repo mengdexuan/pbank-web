@@ -1,0 +1,143 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+
+        <div class="layui-tab-content">
+            <div class="title-box" style="margin: 10px 0;">
+                <div class="title">币值列表</div>
+                <div class="link"><a href="{:url('admin/valuta/add')}" class="layui-btn layui-btn-small" style="color: #fff">添加币值</a></div>
+            </div>
+            <div class="layui-tab-item layui-show">
+
+                <div class="button-box" style="margin-bottom: 30px;">
+                    <button class="layui-btn layui-btn-small curr_type" type="button" data-type="0">跨行调款</button>
+                    <button class="layui-btn layui-btn-small layui-btn-primary" type="button" data-type="1">库存上报</button>
+                    <button class="layui-btn layui-btn-small layui-btn-primary" type="button" data-type="2">上交残损券</button>
+                </div>
+
+                <table class="new-table" id="data_table">
+                    <thead>
+                    <tr>
+                        <th>排序</th>
+                        <th>币值编号</th>
+                        <th>币值</th>
+                        <th>币值名称</th>
+                        <th>是否双流</th>
+                        <th>币值状态</th>
+                        <th>操作</th>
+
+                    </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="6" class="text-center">查询中</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="page_box"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+    $('.button-box').find('.layui-btn').click(function(){
+        $(this).removeClass('layui-btn-primary').addClass('curr_type').siblings().removeClass('curr_type').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        search();
+    });
+    function search(curr){
+        layer.load(2);
+        var url = "__ROOT__/api/bank/query_valuta_info";
+        var op = {
+            use_type:$('.curr_type').attr('data-type'),
+            valuta_status:0,
+            cur_page: curr || 1,
+        };
+
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var valuta_info = data.valuta_info;
+            var html_str = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < valuta_info.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td>"+valuta_info[i].valuta_index+"</td>";
+                    html_str = html_str + "<td>"+valuta_info[i].valuta_code+"</td>";
+                    html_str = html_str + "<td>"+valuta_info[i].valuta_value+"</td>";
+                    html_str = html_str + "<td>"+valuta_info[i].valuta_name+"</td>";
+                    html_str = html_str + "<td>"+valuta_info[i].valuta_flag_str+"</td>";
+                    var red = '';
+                    if(valuta_info[i].valuta_status == -1){
+                        red = 'red';
+                    }
+                    html_str = html_str + "<td><span class='"+red+"'>"+valuta_info[i].valuta_status_str+"</span></td>";
+                    html_str = html_str + '<td>'+
+                            '<a href="__ROOT__/admin/valuta/edit/valuta_code/'+valuta_info[i].valuta_code+'.html">修改</a>'+
+                            '&nbsp;&nbsp;<a href="__ROOT__/api/bank/delete_valuta_info" data-code="'+valuta_info[i].valuta_code+'" class="red ajax-del">删除</a>'+
+                            '</td>';
+                    html_str = html_str + '<tr>';
+                }
+                if(html_str == ''){
+                    html_str = '<td colspan="7" style="text-align: center">暂无数据</td>';
+                }
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = '<tr><td colspan="6" class="text-center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="location=location">刷新</a></td></tr>';
+            }
+
+                $('#data_table').find('tbody').html(html_str);
+                $('#data_table').find('tbody').hide();
+                $('#data_table').find('tbody').fadeIn(500);
+
+
+
+            $('.ajax-del').on('click', function () {
+                var _href = $(this).attr('href');
+                var valuta_code = $(this).attr('data-code');
+                layer.open({
+                    shade: false,
+                    content: '确定删除？',
+                    btn: ['确定', '取消'],
+                    yes: function (index) {
+                        $.ajax({
+                            url: _href,
+                            data:{valuta_code:valuta_code},
+                            type: "post",
+                            success: function (info) {
+                                if (info.err_code === 0) {
+                                    setTimeout(function () {
+                                        location.href = info.url;
+                                    }, 1000);
+                                    info.err_msg = '删除成功';
+                                }
+                                layer.msg(info.err_msg);
+                            }
+                        });
+                        layer.close(index);
+                    }
+                });
+
+                return false;
+            });
+        });
+    };
+    //运行
+    search();
+
+</script>
+{/block}

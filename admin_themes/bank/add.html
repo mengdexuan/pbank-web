@@ -1,0 +1,167 @@
+{extend name="base" /}
+
+{block name="css"}
+<style>
+    .layui-form-label{
+        width: 90px;
+    }
+    .layui-form-item .layui-input-inline{
+        width: 400px;
+    }
+</style>
+{/block}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="title-box">
+            <div class="title">创建商行</div>
+        </div>
+        <div class="layui-tab-content">
+            <div class="layui-tab-item layui-show">
+                <form class="layui-form form-container" action="{:url('/api/bank/add_bank_info')}" method="post">
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">银行编码</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="bank_code" lay-verify="required" placeholder="请输入银行编码" autocomplete="off" class="layui-input">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">父编码</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="parent_code" lay-verify="required" placeholder="请输入父编码" autocomplete="off" class="layui-input">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">商行名称</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="buss_name" lay-verify="required" placeholder="请输入商行名称" autocomplete="off" class="layui-input">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">商行简称</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="bank_short_name" lay-verify="required" placeholder="请输入商行简称" autocomplete="off" class="layui-input">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">分行名称</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="bank_subordinate" lay-verify="required" placeholder="请输入分行名称" autocomplete="off" class="layui-input">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">分行全称</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="bank_name" lay-verify="required" placeholder="请输入分行全称" autocomplete="off" class="layui-input">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">金融机构编码</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="bank_net_code" lay-verify="required" placeholder="请输入金融机构编码" autocomplete="off" class="layui-input">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">银行类型</label>
+                        <div class="layui-input-inline">
+                            <input type="radio" name="bank_type" value="0" title="开户行" checked>
+                            <input type="radio" name="bank_type" value="1" title="非开户行">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">银行公钥</label>
+                        <div class="layui-input-inline textare-box">
+                            <textarea placeholder="请输入银行公钥" name="p_key" lay-verify="required"  class="layui-textarea"></textarea>
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">银行编码加密</label>
+                        <div class="layui-input-inline textare-box">
+                            <textarea placeholder="请输入银行编码加密" name="bank_des" lay-verify="required"  class="layui-textarea"></textarea>
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">银行英文全称</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="bank_eng_name" lay-verify="required" placeholder="请输入银行英文全称" autocomplete="off" class="layui-input">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">银行英文简称</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="bank_eng_short_name" lay-verify="required" placeholder="请输入银行英文简称" autocomplete="off" class="layui-input">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">银行logo</label>
+                        <div class="layui-input-inline textare-box">
+                            <input type="file" id="logo_file" style="margin-bottom: 10px;">
+                            <textarea placeholder="请输入银行logo" name="bank_logo" lay-verify="required" id="bank_logo"  class="layui-textarea"></textarea>
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">拼音</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="bank_py"  placeholder="请输入拼音" autocomplete="off" class="layui-input">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <div class="layui-input-block">
+                            <button class="layui-btn" lay-submit lay-filter="*">保存</button>
+                            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+
+    form.on('submit(*)', function(data){
+        console.log($(data.form).serialize());
+        $.ajax({
+            url: data.form.action,
+            type: data.form.method,
+            data: $(data.form).serialize(),
+            success: function (info) {
+                if (info.err_code == 0) {
+                    setTimeout(function () {
+                        location.href = info.url;
+                    }, 1000);
+                    info.err_msg = '提交成功'
+                }
+                layer.msg(info.err_msg);
+            }
+        });
+        return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+    });
+    $("#logo_file").change(function() {
+        var v = $(this).val();
+        var reader = new FileReader();
+        reader.readAsDataURL(this.files[0]);
+        reader.onload = function (e) {
+            console.log(e.target.result);
+            $('#bank_logo').val(e.target.result);
+        };
+    });
+</script>
+{/block}

@@ -1,0 +1,414 @@
+{extend name="base" /}
+{block name="body"}
+<style>
+    .hideLineBox,
+    .hideTableBox,
+    .hideBankBox {
+        display: inline-block;
+        height: 32px;
+        line-height: 32px;
+        margin-left: 20px;
+        cursor: pointer;
+        font-weight: normal !important;
+        font-size: 12px !important;
+        color: #666 !important;
+        width: 125px;
+    }
+    #hideLine,
+    #hideTable,
+    #hideBank {
+        width: 14px;
+        height: 14px;
+        float: left;
+        margin: 8px 3px;
+    }
+    #examAll {
+        display: inline-block;
+        float: right;
+        font-weight: normal;
+        display: none;
+    }
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <form class="" id="search" action=""  style="display:block;width:100%;background:#fff;position:fixed;top:45px;padding-top:15px;z-index:1000;">
+                <div class="layui-form-item">
+                    <!--<div class="layui-input-inline" style="width: 70px;">
+                        <a href="{:url('admin/balance/index')}" class="layui-btn layui-btn-small {if $query_date != date('Y-m-d',time())}layui-btn-primary{/if}">今天</a>
+                    </div>
+                    <div class="layui-input-inline" style="width: 70px;">
+                        <a href="{:url('admin/balance/index',['query_date'=>$yesterday])}" class="layui-btn layui-btn-small {if $query_date != $yesterday}layui-btn-primary{/if} ">昨天</a>
+                    </div>-->
+                    <div class="layui-input-inline" style="width: 85px;">
+                        <a href="{:url('admin/balance/index',['query_date'=>$prev])}" class="layui-btn layui-btn-primary layui-btn-small">前一天</a>
+                    </div>
+                    <div class="layui-input-inline date-box">
+                        <input type="text" name="beginTime" placeholder="选择日期" id="beginTime"  value="{$query_date}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                    </div>
+                    <div class="layui-input-inline" style="width: 70px;">
+                        <a href="{:url('admin/balance/index',['query_date'=>$next])}" class="layui-btn layui-btn-primary layui-btn-small">后一天</a>
+                    </div>
+                </div>
+            </form>
+            <div class="title-box" style="margin: 60px 0 10px 0;">
+                <div class="title">
+                    库存现金余量统计
+                    <div class="hideLineBox">
+                        <input type="checkbox" name="hideLineBtn" id="hideLine" checked="checked">
+                        <label for="hideLine">隐藏空行</label>
+                    </div>
+                    <div class="hideTableBox">
+                        <input type="checkbox" name="hideTableBtn" id="hideTable">
+                        <label for="hideTable">隐藏余量统计表</label>
+                    </div>
+                    <div class="layui-inline" style="height: 32px;">
+                        <label class="layui-form-label" style="text-align:left;margin-right: -58px;font-size: 12px;line-height: 15px;">单位：</label>
+                        <div class="layui-input-inline">
+                            <select class="layui-input" style="cursor: pointer;width: 68px;margin-bottom: 16px;margin-left: -2px;height: 23px" id="doConversion">
+                                <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元</option>
+                                <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="link"></div>
+            </div>
+            
+            <table class="new-table top-table" style="width: 600px">
+                <thead>
+                <tr>
+                    <th style="width:30%">版别</th>
+                    <th style="width:35%" class="txtR">库存完整券</th>
+                    <th style="width:35%" class="txtR">库存残损券</th>
+                </tr>
+                </thead>
+                <tbody>
+                {volist name="valuta_info" id="vo"}
+                <tr class="low low-sum">
+                    <td>
+                        {$vo['valuta_name']}
+                        <input type="hidden" name="valuta_value[{$vo['valuta_code']}]" value="{$vo['valuta_value']}">
+                    </td>
+                    <td class="txtR doVersionOne">{if isset($vo['full_amount']) && $vo['full_amount'] != 0}{:number_format($vo['full_amount'],2,'.',',')}{else}--{/if}</td>
+                    <td class="txtR doVersionOne">{if isset($vo['damaged_amount']) && $vo['damaged_amount'] != 0}{:number_format($vo['damaged_amount'],2,'.',',')}{else}--{/if}</td>
+                </tr>
+                {/volist}
+                <tr class="low font-bold">
+                    <td>小计</td>
+                    <td class="txtR doVersionOne">{if isset($stock_info['full_amount'])}{:number_format($stock_info['full_amount'],2,'.',',')}{else}0{/if}</td>
+                    <td class="txtR doVersionOne">{if isset($stock_info['damaged_amount'])}{:number_format($stock_info['damaged_amount'],2,'.',',')}{else}0{/if}</td>
+                </tr>
+                <tr class="low font-bold">
+                    <td>总计</td>
+                    <td class="txtR doVersionOne" colspan="2">{if isset($stock_info['amount'])}{:number_format($stock_info['amount'],2,'.',',')}{else}0{/if}</td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="title-box" style="margin: 10px 0;">
+                <div class="title">
+                    上报银行列表
+                    <div class="hideBankBox">
+                        <input type="radio" name="classify" id="showBank">
+                        <label for="showBank">仅显示上报银行</label>
+                    </div>
+                    <div class="hideBankBox">
+                        <input type="radio" name="classify" id="hideBank">
+                        <label for="hideBank">仅显示未上报银行</label>
+                    </div>
+                    <div class="hideBankBox">
+                        <input type="radio" name="classify" id="examined">
+                        <label for="examined">仅显示已审核银行</label>
+                    </div>
+                    <div class="hideBankBox">
+                        <input type="radio" name="classify" id="examine">
+                        <label for="examine">仅显示未审核银行</label>
+                    </div>
+                    <div class="hideBankBox">
+                        <input type="radio" name="classify" id="showAll" checked>
+                        <label for="showAll">显示全部</label>
+                    </div>
+                    <a href="javascript:;" id="examAll" class="layui-btn layui-btn-small">审核全部</a>
+                </div>
+                <div class="link"></div>
+            </div>
+            <table class="new-table" id="data_table">
+                <thead>
+                <tr>
+                    <th>商行名称</th>
+                    <th class="txtR">已报完整券</th>
+                    <th class="txtR p-r-20">已报残损券</th>
+                    <th>状态</th>
+                    <th>审核人</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                {if count($bank_list) > 0}
+                    {volist name="bank_list" id="vo"}
+                        {if $vo['report_flag'] == 1}
+                        <tr class="low low-show {if $vo['stock_status'] == 0}examine{elseif $vo['stock_status'] == 1}examined{/if}" data-id="{$vo['stock_id']}">
+                            <td>{:get_bank($vo['bank_code'])}</td>
+                            <td class="txtR doVersionOne">{:number_format($vo['full_amount'],2,'.',',')}</td>
+                            <td class="txtR p-r-20 doVersionOne">{:number_format($vo['damaged_amount'],2,'.',',')}</td>
+                            <td><span {if $vo['stock_status'] == 0}class="red"{/if}>{:get_balance_status($vo['stock_status'])}</span></td>
+                            <td>{if $vo['stock_status'] == 0}--{elseif $vo['stock_status'] == 1}{$vo['approver']}{/if}</td>
+                            <td>
+                                {if $vo['stock_status'] == 0}
+                                <a href="{:url('api/bank/approve_buss_stock')}" class="exam" data-id="{$vo['stock_id']}">审核</a>
+                                {elseif $vo['stock_status'] == 1}
+                                <a href="{:url('api/bank/cancel_approve_buss_stock')}" data-id="{$vo['stock_id']}" class="red ajax-del">取消审核</a>
+                                {/if}
+                                <a href="{:url('admin/balance/info',['bank_code'=>$vo['bank_code'],'query_date'=>$vo['stock_date'],'stock_id'=>$vo['stock_id']])}" >查看</a>
+                            </td>
+                        </tr>
+                        {else}
+                        <tr class="low low-none">
+                            <td>{:get_bank($vo['bank_code'])}</td>
+                            <td class="txtR">--</td>
+                            <td class="txtR p-r-20">--</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                        {/if}
+                    {/volist}
+                {else}
+                <tr class="low">
+                    <td colspan="6" class="text-center">暂无数据</td>
+                </tr>
+                {/if}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+$(function(){
+    var start = {
+        istoday: false
+        ,choose: function(datas){
+            location.href = '__ROOT__/admin/balance/index/query_date/'+datas+'.html';
+        }
+    };
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    function hideLine(){
+        if($('#hideLine').is(':checked')){
+            $('.low-sum').each(function(){
+                var w = $(this).find('td').eq(1).html();
+                var c = $(this).find('td').eq(2).html();
+                if( w == '--' && c == '--'){
+                    $(this).hide();
+                }
+            })
+        }else{
+            $('.low-sum').each(function(){
+                $(this).show();
+            })
+        }
+    }
+    hideLine();
+    $('#hideLine').click(function(){
+        hideLine();
+    });
+    function hideTable(){
+        if($('.top-table').is(':hidden')){
+            $('.top-table').show();
+        }else{
+            $('.top-table').hide();
+        }
+    }
+    $('#hideTable').click(function(){
+        hideTable();
+    });
+    $('#showBank').click(function(){
+        $('.low-show').each(function(){
+            $(this).show();
+        });
+        $('.low-none').each(function(){
+            $(this).hide();
+        });
+        $('#examAll').hide();
+    });
+    $('#hideBank').click(function(){
+        $('.low-show').each(function(){
+            $(this).hide();
+        });
+        $('.low-none').each(function(){
+            $(this).show();
+        });
+        $('#examAll').hide();
+    });
+    $('#examined').click(function(){
+        $('.examined').each(function(){
+            $(this).show();
+        });
+        $('.examine').each(function(){
+            $(this).hide();
+        });
+        $('.low-none').each(function(){
+            $(this).hide();
+        });
+        $('#examAll').hide();
+    });
+    $('#examine').click(function(){
+        $('.examined').each(function(){
+            $(this).hide();
+        });
+        $('.examine').each(function(){
+            $(this).show();
+        });
+        $('.low-none').each(function(){
+            $(this).hide();
+        });
+        if($('.examine').length > 0){
+            $('#examAll').show();
+        }else {
+            $('#examAll').hide();
+        }
+    });
+    $('#showAll').click(function(){
+        $('.low-show').each(function(){
+            $(this).show();
+        });
+        $('.low-none').each(function(){
+            $(this).show();
+        });
+        $('#examAll').hide();
+    });
+});
+// 取消审核
+$('.ajax-del').on('click', function () {
+    var _href = $(this).attr('href');
+    var stock_id = $(this).attr('data-id');
+    layer.open({
+        shade: false,
+        content: '确定取消审核？',
+        btn: ['确定', '取消'],
+        yes: function (index) {
+            $.ajax({
+                url: _href,
+                data:{
+                    stock_id: stock_id
+                },
+                type: "post",
+                success: function (info) {
+                    if (info.err_code === 0) {
+                        setTimeout(function () {
+                            location.reload();
+                        }, 1000);
+                        info.err_msg = '取消审核成功';
+                    }
+                    layer.msg(info.err_msg);
+                }
+            });
+            layer.close(index);
+        }
+    });
+    return false;
+});
+// 审核
+$('.exam').on('click', function () {
+    var _href = $(this).attr('href');
+    var stock_id = $(this).attr('data-id');
+    layer.open({
+        shade: false,
+        content: '确定通过审核？',
+        btn: ['确定', '取消'],
+        yes: function (index) {
+            $.ajax({
+                url: _href,
+                data:{stock_id:stock_id},
+                type: "post",
+                success: function (info) {
+                    if (info.err_code === 0) {
+                        setTimeout(function () {
+                            location.reload();
+                        }, 1000);
+                        info.err_msg = '审核成功';
+                    }
+                    layer.msg(info.err_msg);
+                }
+            });
+            layer.close(index);
+        }
+    });
+    return false;
+});
+// 批量审核
+$('#examAll').on('click', function () {
+    var stocks = '';
+    $('.examine').each(function(){
+        stock_id = $(this).attr('data-id');
+        stocks += '{"stock_id":"'+stock_id+'"},'
+    });
+    stocks = '[' + stocks + ']';
+    stocks = stocks.replace(",]","]");
+    console.log(stocks);
+    layer.open({
+        shade: false,
+        content: '确定进行批量审核？',
+        btn: ['确定', '取消'],
+        yes: function (index) {
+            $.ajax({
+                url: '__ROOT__/api/bank/batch_approve_buss_stock',
+                data:{stocks:stocks},
+                type: "post",
+                success: function (info) {
+                    console.log(info)
+                    if (info.err_code === 0) {
+                        setTimeout(function () {
+                            location.reload();
+                        }, 1000);
+                        info.err_msg = '审核成功';
+                    }else{
+                        info.err_msg = '审核失败，请刷新后重试！';
+                    }
+                    layer.msg(info.err_msg);
+                }
+            });
+            layer.close(index);
+        }
+    });
+    return false;
+});
+    //元万元亿切换
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+
+        $('.doVersionOne').each(function(i,e){
+            if ($(this).text() != '--') {
+                if (!$(this).attr('number')) {
+                    $(this).attr('number',$(this).text());
+                }
+                var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+                var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+                if (numberOld >= 1) {
+                    var numberNew = number_format(numberOld,2,'.',',') + word;
+                }else{
+                    var numberNew = numberOld + word;
+                }
+                
+                $(this).text(numberNew);                    
+            }
+        });
+    });
+    $("#doConversion").trigger("change");
+</script>
+{/block}

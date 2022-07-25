@@ -1,0 +1,182 @@
+<!--
+Created Date: Thursday April 26th 2018 7:36:25 pm
+Author: haiyue
+-----
+Last Modified:Thursday April 26th 2018 7:36:25 pm
+Modified By: haiyue
+-----
+Copyright (c) 2018 MagCloud
+-->
+{extend name="base" /}
+{block name="css"}
+<style>
+    .m10 {
+        margin: 10px;
+    }
+</style>
+{/block}
+{block name="body"}
+
+<div class="layui-tab layui-tab-brief">
+    <div class="layui-tab-content">
+        <div class="title-box">
+            <div class="title">捆查询</div>
+        </div>
+        <form class="layui-form layui-form-pane" id="pack_form" action="">
+            <div class="layui-form-item">
+                <label class="layui-form-label">捆号</label>
+                <div class="layui-input-inline" style="width: 400px;">
+                    <input type="text" name="code" autocomplete="off" placeholder="" value="{$code}"
+                        class="layui-input code">
+                </div>
+                <div class="layui-input-inline">
+                    <button type="button" class="layui-btn layui-btn-small search" lay-submit
+                        lay-filter="search">查询</button>
+                </div>
+            </div>
+        </form>
+        <div class="layui-inline" style="height: 32px;" id="doConversionShow">
+            <label class="layui-form-label" style="text-align:left;margin-right: -58px;">单位：</label>
+            <div class="layui-input-inline">
+                <select class="layui-input" style="cursor: pointer;width: 68px;" id="doConversion">
+                    <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元
+                    </option>
+                    <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元
+                    </option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-tab-item layui-show">
+            <div class="" style="display: none;" id="back_data">
+                <p class="text-center">查询中</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<input type="text" id="bank_code" value="{$bank_code}" style="display: none;">
+{/block}
+{block name="script"}
+<script>
+    $('#doConversionShow').hide();
+    $('.search').click(function () {
+        search();
+    });
+    function search(curr) {
+        layer.load(2);
+        var code = $.trim($('.code').val());
+        var url = "__ROOT__/api/bigdata/new_bundle_search";
+        var _bankCode = $('#bank_code').val();
+        var op = {
+            page: curr || 1,
+            bundleCode: code,
+            limit: 20 //向服务端传的参数，此处只是演示
+        };
+        data_page(url, op, function (result) {
+            layer.closeAll('loading');
+            var html_str = '';
+            if (result.length > 0) {
+                $('#back_data').show();
+                for (var i = 0; i < result.length; i++) {
+                    html_str = html_str + "<h4 class='m10'> 查询的捆号：" + result[i].code + "&nbsp;&nbsp;&nbsp;&nbsp;流转次数：" + result[i].resultList.length + "次</h4>";
+                    html_str = html_str + "<table class='new-table'><thead><tr><th>捆号</th><th>金额</th><th>所属银行名称</th><th>轨迹动作</th><th>发生时间</th><th>操作</th></tr></thead><tbody>";
+                    for (var k = 0; k < result[i].resultList.length; k++) {
+                        html_str = html_str + "<tr class='low'>";
+                        html_str = html_str + "<td>" + result[i].resultList[k].code + "</td>";
+                        html_str = html_str + "<td class='doVersionOne'>" + result[i].resultList[k].amount + "</td>";
+                        html_str = html_str + "<td>" + result[i].resultList[k].bankName + "</td>";
+                        html_str = html_str + "<td>" + result[i].resultList[k].content + "</td>";
+                        html_str = html_str + "<td>" + result[i].resultList[k].updateTime + "</td>";
+                        html_str = html_str + "<td>" + LinkFn(result[i].resultList[k].taskCode) + "</td>";
+                        html_str = html_str + "</tr>";
+                    }
+                    html_str = html_str + '</tbody></table>';
+                }
+                // laypage({
+                //     cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                //     pages: result.total_page, //通过后台拿到的总页数
+                //     curr: curr || 1, //当前页
+                //     jump: function (obj, first) { //触发分页后的回调
+                //         if (!first) { //点击跳页触发函数自身，并传递当前页：obj.curr
+                //             search(obj.curr);
+                //         }
+                //     }
+                // });
+            }
+            if (html_str == '') {
+                html_str = '<p style="text-align: center">暂无数据</p>';
+            }
+            $('#back_data').html(html_str);
+            $('#back_data').hide();
+            $('#back_data').fadeIn(500);
+            $('#doConversionShow').show();
+            $("#doConversion").trigger("change");
+        });
+    };
+    function LinkFn(code) {
+        if (code) return '<span style="text-align: center">' + code + '</span>';
+        return '<span style="text-align: center"> -- </span>';
+    }
+    //运行
+    var code = $.trim($('.code').val());
+    if (code != '') {
+        search();
+    }
+    //search();
+</script>
+<script>
+    var dom_pack = $('.pack_code');
+    dom_pack.on("keypress", function (e) {
+        var kc = e.which || e.keyCode;
+        if (kc == 13) {
+            var thisval = $.trim($(this).val());
+            try {
+                thisval = JSON.parse(thisval).bc;
+                if ($.trim(thisval) != '') {
+                    $(this).val(thisval);
+                }
+            } catch (e) {
+
+            }
+
+        }
+    }).focus().select();
+    $('#pack_form').submit(function () {
+        thisval = $.trim(dom_pack.val());
+        //        if(!(new RegExp("^B[a-zA-Z0-9]{4}[0-9]{10}$")).test(thisval)){
+        //            $("#pack-code-scan").select();
+        //            layer.msg('包号格式不正确！');
+        //            return false;
+        //        }
+    });
+    //元万元亿切换
+    $('#doConversion').change(function () {
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        } else if (thisVal == 'w') {
+            var word = '万元';
+            var rate = 10000;
+        } else {
+            var word = '元';
+            var rate = 1;
+        }
+
+        $('.doVersionOne').each(function (i, e) {
+            if (!$(this).attr('number')) {
+                $(this).attr('number', $(this).text());
+            }
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, "")) * 10000) / (Number(rate) * 10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld, 2, '.', ',') + word;
+            } else {
+                var numberNew = numberOld + word;
+            }
+
+            $(this).text(numberNew);
+        });
+    });
+</script>
+{/block}

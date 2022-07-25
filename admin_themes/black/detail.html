@@ -1,0 +1,246 @@
+{extend name="base" /}
+{block name="body"}
+
+<div class="layui-body">
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+
+            <form class="" id="search" action="{:url('admin/black/detail')}"  style="display:inline-block;width:100%;background:#fff;position:fixed;top:45px;padding-top:15px;z-index:1000;" enctype="multipart/form-data" method="post">
+                <div class="layui-form-item">
+                    <div class="layui-input-inline w82">
+                        <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="before">前一天</a>
+                    </div>
+                    <div class="layui-input-inline date-box">
+                        <input type="text" name="beginTime" placeholder="选择开始日期" id="beginTime"  value="{$beginTime}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                    </div>
+                    <div class="layui-input-inline wa date-center">-</div>
+                    <div class="layui-input-inline date-box">
+                        <input type="text" name="endTime" placeholder="选择结束日期" id="endTime"  value="{$endTime}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                    </div>
+                    <div class="layui-input-inline w82">
+                        <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="after">后一天</a>
+                    </div>
+                    <div class="layui-input-inline" style="width: 125px;">
+                        <a class="layui-btn layui-btn-small blackDown" href="javascript:;">监控黑名单下载</a>
+                    </div>
+                    <div class="layui-input-inline" style="width: 70px;">
+                        <a class="layui-btn layui-btn-small quick" href="/admin/black/index.html">返回</a>
+                    </div>
+                    <input type="hidden" name="page" value="{$param['page']}">
+                </div>
+
+                <div class="layui-input-inline" style="width: 130px;">
+                    <input type="text" name="seqNo" style="height: 32px;" value="{$param['seqNo']}" placeholder='搜索冠字号' class="layui-input">
+                </div>
+                <div class="layui-input-inline" style="width: 130px;">
+                    <input type="text" name="bankCode" style="height: 32px;" value="{$param['bankCode']}" placeholder='搜索银行编码' class="layui-input">
+                </div>
+                <div class="layui-input-inline" style="width: 130px;">
+                    <button type="submit" class="layui-btn layui-btn-small quick search">查询</button>
+                </div>
+            </form>
+            <table class="layui-table" id="data_table" style="margin: 128px 0px;">
+                <thead>
+                <tr>
+                    <th>冠字号码</th>
+                    <th>币值</th>
+                    <th>版别</th>
+                    <th>类型</th>
+                    <th>币种</th>  
+                    <th>所属银行</th>   
+                    <th>所属捆号</th>   
+                    <th>创建时间</th>   
+                </tr>
+                </thead>
+                <tbody>
+                {if !empty($res['info'])}
+                <?php foreach ($res['info'] as $k => $v ) { ?>
+                <tr>
+                    <td><?php echo $v['seqNo'];?></td>
+                    <td><?php echo $v['valuta'];?></td>
+                    <td><?php echo $v['ver'];?></td>
+                    <td><?php echo $v['type'];?></td>
+                    <td><?php echo $v['moneyFlag'];?></td>
+                    <td><?php echo $v['bankCode'];?></td>
+                    <td><?php echo $v['bundleCode'];?></td>
+                    <td><?php echo date('Y-m-d H:i:s',$v['createTime']/1000);?></td>
+                </tr>
+                <?php } ?>
+                {/if}
+                {if empty($res['info'])}
+                <tr>
+                    <td colspan="8" style="text-align: center;">无数据</td>
+                </tr>
+                {/if}
+                </tbody>
+            </table>
+            <div id="demo1"></div>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" name="uploadUrl" value="<?php echo config('black_interface_url');?>" id='uploadUrl'> 
+<input type="hidden" name="total" value="<?php echo ceil($res['total']/10);?>"> 
+{/block}
+{block name="script"}
+<script type="text/javascript">
+    //下载
+    $('.blackDown').mouseover(function(){
+      var uploadUrl = $('#uploadUrl').val();
+      var seqNo = $('input[name="seqNo"]').val();
+      var bankCode = $('input[name="bankCode"]').val();
+      var page = $('input[name="page"]').val();
+      var beginTime = $('input[name="beginTime"]').val()+' 00:00:00';
+      var endTime = $('input[name="endTime"]').val()+' 23:59:59';
+      $(this).attr('href',uploadUrl+'/blacklist-monitor/download?startDateTime='+beginTime+'&endDateTime='+endTime+'&seqNo='+seqNo+'&bankCode='+bankCode+'&page='+page);
+    });
+</script>
+<script type="text/javascript">
+    var uploadUrl = $('input[name="uploadUrl"]').val();
+
+    //搜索
+    $('.search').click(function () {
+        var beginTime = $('#beginTime').val();
+        var endTime = $('#endTime').val();
+        var page = $('input[name="page"]').val();
+        if(get_time(beginTime) >get_time(endTime)){
+            layer.msg('开始时间不能大于结束时间');
+            return false;
+        }
+        if(beginTime == '' && endTime == ''){
+            layer.msg('请选择开始时间与结束时间');
+            return false;
+        }
+    });
+
+    //分页
+    var curr = $('input[name="page"]').val();
+    laypage({
+        cont: 'demo1', 
+        pages: $('input[name="total"]').val(),
+        curr: curr, 
+        jump: function(obj, first){ 
+            $('input[name="page"]').val(obj.curr);
+        }
+    });
+    $('#demo1').find('a').click(function(){
+        $('.search').trigger('click');
+    });
+
+    //ajax 请求
+    function doAjax(url='' , data='' , method='post'){
+        layer.load(2);
+        $.ajax({
+            url:url,
+            data:{data:data},
+            type:method,
+            dataType:'json',
+            success: function (res) {
+                if (res.err_code > 0) {
+                    layer.msg(res.err_msg);
+                }else{
+                    layer.msg(res.message);
+                    location.href = '';
+                    // if (add !== false) {
+                    //    getDetail($('input[name="seqNo"]').val());
+                    //    resetload();
+                    //    return false; 
+                    // }else{
+                        
+                    // }
+                }
+            },
+            error: function (res){
+                layer.msg(res.err_msg);
+            }
+        });  
+    }
+
+    //取消layer load
+    function resetload(){
+        setTimeout(function(){
+          layer.closeAll('loading');
+        }, 2000);
+    }
+</script>
+<script>
+$(function(){
+    var _type = 'today';
+    var start = {
+        elem:'focus',
+        istoday: true
+    };
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    document.getElementById('endTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    $('.today').click(function () {
+        button_c(this);
+        var date = GetDateStr(0);
+        $('#beginTime').val(date);
+        $('#endTime').val(date);
+        location.href = '__ROOT__/admin/damaged/index/beginTime/'+date+'/endTime/'+date+'.html';
+    });
+    $('.yesterday').click(function () {
+        button_c(this);
+        var date = GetDateStr(-1);
+        $('#beginTime').val(date);
+        $('#endTime').val(date);
+        location.href = '__ROOT__/admin/damaged/index/beginTime/'+date+'/endTime/'+date+'.html';
+    });
+    function getDate (str){
+        var y = str.getFullYear();
+        var m = Number(str.getMonth())+1;
+        if(m.toString().length<2){
+            m = '0'+m;
+        }
+        var d = str.getDate();
+        if(d.toString().length<2){
+            d = '0'+d;
+        }
+        var date = y + '-' + m + '-' + d;
+        return date;
+    }
+    $('#before').click(function(){
+        var start = $('#beginTime').val();
+        var end = $('#endTime').val();
+        var curDate = '';
+        if(start!=''){
+            curDate = Date.parse(start);
+        }else if(start == '' && end != ''){
+            curDate = Date.parse(end);
+        }else if(start == '' && end == ''){
+            layer.msg('请选择一个时间点！');
+            return false;
+        }
+        var preDate = new Date(curDate - 24*60*60*1000);
+        $('#beginTime').val(getDate(preDate));
+        $('#endTime').val(getDate(preDate));
+        $('.search').trigger('click');
+    });
+
+    $('#after').click(function(){
+        var start = $('#beginTime').val();
+        var end = $('#endTime').val();
+        var curDate = '';
+        if(end!=''){
+            curDate = Date.parse(end);
+        }else if(start != '' && end == ''){
+            curDate = Date.parse(start);
+        }else if(start == '' && end == ''){
+            layer.msg('请选择一个时间点！');
+            return false;
+        }
+        var nextDate = new Date(curDate + 24*60*60*1000);
+        $('#beginTime').val(getDate(nextDate));
+        $('#endTime').val(getDate(nextDate));
+        $('.search').trigger('click');
+    });
+});
+</script>
+<script src="__JS__/jquery.circliful.min.js"></script>
+{/block}

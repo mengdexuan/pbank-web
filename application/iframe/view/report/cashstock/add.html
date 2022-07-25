@@ -1,0 +1,225 @@
+{extend name="base" /}
+{block name="body"}
+<!--tab标签-->
+<style>
+    input {
+        background: none;
+        border: 1px solid #333;
+    }
+    .data_row input {
+        width: 100%;
+    }
+    .subtotal,
+    .total {
+        border: none;
+        text-align: right;
+    }
+    .outlets,
+    .sampleOutlets {
+        width: 80px;
+    }
+</style>
+<div class="layui-tab layui-tab-brief">
+    <div class="layui-tab-content">
+        <span class="layui-breadcrumb">
+            <a href="{:url('iframe/report/index',['bank_code'=>$bank_key,'bankCode'=>$bank_code])}">报表列表</a>
+            <a href="{:url('iframe/report/list',['reportNum'=>$reportNum,'bank_code'=>$bank_key,'bankCode'=>$bank_code])}">{:show_report_name($reportNum)}</a>
+            <a><cite>填报</cite></a>
+        </span>
+
+        <table class="layui-table report">
+            <caption>{$year}年第{$quarter}季度{:show_report_name($reportNum)}</caption>
+            <caption class="t-tip">单位：元</caption>
+            <thead>
+            <tr>
+                <th rowspan="2" width="15%">券别</th>
+                <th colspan="4">完整券</th>
+                <th rowspan="2" width="14%">残损券</th>
+                <th rowspan="2" width="15%">合计</th>
+            </tr>
+            <tr>
+                <th width="14%">业务库库存</th>
+                <th width="14%">银行自动机具备付</th>
+                <th width="14%">其它</th>
+                <th width="14%">小计</th>
+            </tr>
+            </thead>
+            <tbody>
+                {volist name="$data['rowList']" id="vo"}
+                <tr class="data_row">
+                    <td class="c"><input type="text" class="rowCode" value="{$vo['rowCode']}" readonly style="display:none;">{$vo['showName']}</td>
+                    <td class="c"><input data-type="1" type="number" min="0" max="99999999" class="bussStock" value=""></td>
+                    <td class="c"><input data-type="1" type="number" min="0" max="99999999" class="atmStock" value=""></td>
+                    <td class="c"><input data-type="1" type="number" min="0" max="99999999" class="otherStock" value=""></td>
+                    <td class="c"><input type="number" min="0" max="99999999" class="subtotal" value="" readonly></td>
+                    <td class="c"><input data-type="2" type="number" min="0" max="99999999" class="damageStock" value=""></td>
+                    <td class="c"><input type="number" min="0" max="99999999" class="total" value="" readonly></td>
+                </tr>
+                {/volist}
+                <tr>
+                    <td class="c">合计</td>
+                    <td class="bussStockSum"></td>
+                    <td class="atmStockSum"></td>
+                    <td class="otherStockSum"></td>
+                    <td class="subtotalSum"></td>
+                    <td class="damageStockSum"></td>
+                    <td class="totalSum"></td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td class="c" colspan="3">全辖银行营业网点（个）：<input type="number" min="0" max="99999999" class="ratioInput outlets" value=""></td>
+                    <td class="c" colspan="3">抽样银行营业网点（个）：<input type="number" min="0" max="99999999" class="ratioInput sampleOutlets" value=""></td>
+                    <td class="c">抽样比例（%）：<span class="ratio"></span></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+<button class="layui-btn layui-btn-small" id="submit" style="display:block;margin:0 auto;">提交</button>
+{/block}
+
+{block name="script"}
+<script>
+    $(function(){
+        /*自动计算金额*/
+        function setNum(a,t){
+            var num = 0;
+            var class1 = '.'+a;
+            var class2 = '.'+a+'Sum';
+            $(class1).each(function(){
+                var value = $(this).val();
+                if(t == 1 || t == 2 ) {
+                    if(value>99999999){
+                        layer.msg('输入的金额过大！');
+                        $(this).val('');
+                        return false;
+                    }
+                    if(value<0){
+                        layer.msg('输入的金额不能小于0！');
+                        $(this).val('');
+                        return false;
+                    }
+                    var length = $(this).val().length;
+                    var first = value.indexOf(".");
+                    if( first>0 && length - first >5 ){
+                        layer.msg('输入的金额过小！');
+                        $(this).val('');
+                        return false;
+                    }
+                }
+                num += Number($(this).val()*10000);
+            });
+            $(class2).html(num/10000);
+            if(t == 1 || t == 2 ) {
+                total();
+                setNum('subtotal');
+                setNum('total');
+            }
+
+        }
+        /*计算总数subtotal 和 total*/
+        function total(){
+            $('tr').each(function(){
+                var m = 0;
+                var t = $(this).find('input[data-type="1"]');
+                $(t).each(function(){
+                    m += Number($(this).val())
+                });
+                $(this).find('.subtotal').val(m);
+
+                var n = 0;
+                var c = $(this).find('input[data-type="2"]');
+                n = Number($(c).val())+Number(m);
+                $(this).find('.total').val(n);
+            })
+        }
+
+        /*自执行函数---在查看和修改里面需要用*/
+        setNum('bussStock');
+        setNum('atmStock');
+        setNum('otherStock');
+        setNum('subtotal');
+        setNum('damageStock');
+        setNum('total');
+
+        $('tbody tr td input').each(function(){
+            var a = $(this).attr('class');
+            var t = $(this).attr('data-type');
+            $(this).bind('input propertychange', function() { setNum(a,t); });
+            $(this).blur(function(){ setNum(a,t); });
+            $(this).on('keypress',function(){ setNum(a,t); });
+        });
+
+        /*计算百分比*/
+        function ratio(){
+            var outlets = $('.outlets').val();
+            var sampleOutlets = $('.sampleOutlets').val();
+            var ratio = Number((Number(sampleOutlets)/Number(outlets)*100).toFixed(2));
+            if (!ratio || ratio == Infinity) {
+                ratio = '--';
+            }
+            $('.ratio').html(ratio+'%');
+        }
+        ratio();
+        $('.ratioInput').bind('input propertychange', function() { ratio(); });
+        $('.ratioInput').blur(function(){ ratio(); });
+        $('.ratioInput').on('keypress',function(){ ratio(); });
+
+
+        /*新增-提交*/
+        $("#submit").click(function(){
+            var bankCode = "{$bank_code}";
+            var year = {$year};
+            var quarter = {$quarter};
+            var outlets = $('.outlets').val();
+            var sampleOutlets = $('.sampleOutlets').val();
+            if( outlets < sampleOutlets ){
+                layer.msg('抽样网点不能多于总网点！');
+                return false;
+            }
+            var tableData = '';
+            $('.data_row').each(function(){
+                var rowCode = $(this).find('td .rowCode').val();
+                var bussStock = $(this).find('td .bussStock').val()*10000;
+                var atmStock = $(this).find('td .atmStock').val()*10000;
+                var otherStock = $(this).find('td .otherStock').val()*10000;
+                var damageStock = $(this).find('td .damageStock').val()*10000;
+                if (rowCode == '') { rowCode = 0; }
+                if (bussStock == '') { bussStock = 0; }
+                if (atmStock == '') { atmStock = 0; }
+                if (otherStock == '') { otherStock = 0; }
+                if (damageStock == '') { damageStock = 0; }
+                tableData += '{rowCode:"'+rowCode+'",bussStock:'+bussStock+',atmStock:'+atmStock+',otherStock:'+otherStock+',damageStock:'+damageStock+'},'
+            });
+            tableData = '[' + tableData + ']';
+            tableData = tableData.replace(",]","]");
+            $.ajax({
+                url: '__ROOT__/api/report/cask_stock_add',
+                data:{
+                    bankCode: bankCode,
+                    year: year,
+                    quarter: quarter,
+                    outlets: outlets,
+                    sampleOutlets: sampleOutlets,
+                    tableData: tableData
+                },
+                type: "post",
+                data_type:'json',
+                success: function (info) {
+                    if (info.err_code == 0) {
+                        setTimeout(function () {
+                            var url = "__ROOT__/iframe/report/cashstock_detail/bankCode/{$bank_code}/bank_code/{$bank_key}/year/{$year}/quarter/{$quarter}/reportNum/{$reportNum}.html";
+                            //console.log(url);
+                            window.location.href = url;
+                        }, 1000);
+                        layer.msg('填报成功');
+                    }else {
+                        layer.msg(info.err_msg);
+                    }
+                }
+            });
+        });
+    })
+</script>
+{/block}

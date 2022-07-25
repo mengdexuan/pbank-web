@@ -1,0 +1,158 @@
+{extend name="base" /}
+{block name="body"}
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <div class="title-box">
+                <div class="title">查捆</div>
+            </div>
+            <form class="layui-form layui-form-pane" action="">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">捆号</label>
+                    <div class="layui-input-inline" style="width: 400px;">
+                        <input type="text" name="bundle_code" autocomplete="off" placeholder="" value="{$bundle_code}" class="layui-input bundle_code">
+                    </div>
+                    <div class="layui-input-inline">
+                        <button class="layui-btn layui-btn-small" lay-submit lay-filter="search">查询</button>
+                    </div>
+                </div>
+            </form>
+            {if $gzhs}
+            <div class="layui-form-item" style="margin: 10px 0;">
+                <a class="layui-btn layui-btn-normal layui-btn-small" href="{:url('iframe/task/download_bundle_file',['bundle_code'=>isset($data['bundle_code'])?$data['bundle_code']:$bundle_code])}">下载fsn文件</a>
+                <a href="{:url('iframe/holds/page',['bundleCode'=>$bundle_code])}">查看把</a>
+            </div>
+            {/if}
+            {if $data}
+            <div class="title-box" style="margin: 10px 0;">
+                <div class="title">捆号 {$bundle_code}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 金额</label>
+                    <div class="pack-info-text"><span class="doVersionOne">{:number_format($data['bundle_amount'],2,'.',',')}</span>（面额{$data['valuta']}）</div>
+                </div>
+                <div class="info-inline">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 状态</label>
+                    <div class="pack-info-text">{:get_bundle_status($data['bundle_status'])}</div>
+                </div>
+                <div class="info-inline">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 所属银行</label>
+                    <div class="pack-info-text width-auto">
+                        {if $data['owner_bank'] == get_cur_bank()}
+                        本行
+                        {else}
+                        {:getBankNameByCode($data['owner_bank'])}
+                        {/if}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 上传人</label>
+                    <div class="pack-info-text">{$data['op_name']}</div>
+                </div>
+                <div class="info-inline">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 上传时间</label>
+                    <div class="pack-info-text"><?php echo date('Y-m-d H:i:s',$data['op_time']);?></div>
+                </div>
+                <div class="info-inline">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 上传银行</label>
+                    <div class="pack-info-text width-auto">
+                        {if $data['creator_bank'] == get_cur_bank()}
+                        本行
+                        {else}
+                        {:getBankNameByCode($data['creator_bank'])}
+                        {/if}
+                    </div>
+                </div>
+            </div>
+            {/if}
+            {if $gzhs}
+            <form class="layui-form layui-form-pane" action="">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">冠字号</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="search_code" id="search_code" autocomplete="off" placeholder="" value="" class="layui-input">
+                    </div>
+                    <div class="layui-input-inline"><div class="line-text">冠字号码（{$gzhs['count']}个）</div></div>
+                </div>
+            </form>
+            <div class="bundle-box">
+                {volist name="gzhs['gzh_codes']" id="vo"}
+                <div class="gzh" item-val="{$vo}">{$vo}</div>
+                {/volist}
+            </div>
+            {else}
+            {if $is_search == 1}
+            查询无结果
+            {/if}
+            {/if}
+        </div>
+    </div>
+{/block}
+{block name="script"}
+<script>
+    $("#search_code").keyup(function(){
+        var filterRows = $(".gzh");
+
+        var filterVal = $.trim($(this).val());
+        if(filterVal == ""){
+            filterRows.each(function(){
+                $(this).text($.trim($(this).attr("item-val")));
+                $(this).css("opacity", 1);
+                $(this).show();
+            });
+        }else{
+            filterVal = filterVal.toUpperCase();
+            filterRows.each(function(){
+                var gzhCode = $.trim($(this).attr("item-val"));
+                var gzhCodeUp = gzhCode.toUpperCase();
+                var startIdx = gzhCodeUp.indexOf(filterVal);
+                //console.log(startIdx);
+                if(startIdx == -1){
+                    $(this).css("opacity", .5);
+                    $(this).hide();
+                }else{
+                    var prefix = "";
+                    if(startIdx != 0){
+                        prefix = gzhCode.substring(0, startIdx);
+                    }
+                    var len = filterVal.length;
+                    var hightlight = gzhCode.substr(startIdx, len);
+                    var suffix = "";
+                    if(startIdx+len < gzhCode.length){
+                        suffix = gzhCode.substring(startIdx+len);
+                    }
+                    $(this).html(prefix+"<span style='color:#a94442;font-weight:bold;'>"+hightlight+"</span>"+suffix);
+                    $(this).css("opacity", 1);
+                    $(this).show();
+                }
+            });
+        }
+    }).keyup();
+    //鼠标悬停提示特效
+    $(".doVersionOne").hover(function() {
+        openMsg($(this));
+    }, function() {
+        layer.close(subtips);
+    });
+    function openMsg(_this) {
+        var num = doVersionOne(_this);
+        subtips = layer.tips(num, '.doVersionOne',{tips:[1,'#ff6700'],time: 30000});
+    } 
+    // 元万元亿切换
+    function doVersionOne(_this){
+        if (!_this.attr('number')) {
+            _this.attr('number',_this.text());
+        }
+        var numberOld = $.trim(_this.attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+        var numberOld = numberOld.replace(/,/g, "")/10000;
+        if (numberOld >= 1) {
+            var numberNew = number_format(numberOld,2,'.',',') + '万元';
+        }else{
+            var numberNew = numberOld + '万元';
+        }
+        return numberNew;    
+    }
+</script>
+{/block}

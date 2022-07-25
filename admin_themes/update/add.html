@@ -1,0 +1,75 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="title-box">
+            <div class="title">添加新版本</div>
+        </div>
+        <div class="layui-tab-content">
+            <div class="layui-tab-item layui-show">
+                <form class="layui-form form-container" id="uploadForm" enctype="multipart/form-data" action="{:url('/api/bank/upload_update_file')}" method="post">
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">程序类型</label>
+                        <div class="layui-input-block">
+                            <select id="program_type" name="program_type" lay-verify="required" lay-filter="out">
+                                <option value="">请选择程序类型</option>
+                                {foreach name="program_types" item="vo" }
+                                <option value="{$key}">{$vo}</option>
+                                {/foreach}
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">程序压缩包</label>
+                        <div class="layui-input-inline">
+                            <input type="file" name="files" id="files" lay-type="file" class="">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">程序名称</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="program_name" lay-verify="required" placeholder="请输入程序名称" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <div class="layui-input-block">
+                            <button class="layui-btn" lay-submit lay-filter="*">保存</button>
+                            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+
+    form.on('submit(*)', function(data){
+        var formData = new FormData($( "#uploadForm" )[0]);
+        $.ajax({
+            url: data.form.action,
+            type: 'POST',
+            data: formData,
+            async: false,
+            cache: false,
+            contentType: false,
+            processData: false,
+            success: function (info) {
+                if (info.err_code == 0) {
+                    setTimeout(function () {
+                        location.href = info.url;
+                    }, 1000);
+                    info.err_msg = '提交成功'
+                }
+                layer.msg(info.err_msg);
+            }
+        });
+
+        return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+    });
+</script>
+{/block}

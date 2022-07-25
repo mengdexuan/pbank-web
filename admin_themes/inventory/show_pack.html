@@ -1,0 +1,337 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <ul class="layui-tab-title">
+            <li><a href="{:url('admin/inventory/index')}">库存列表</a></li>
+            <li class="layui-this">开始装包</li>
+        </ul>
+        <div class="layui-tab-content">
+            <div class="layui-tab-item layui-show">
+                <blockquote class="layui-elem-quote">
+
+                        <div class="layui-form-item" style="margin-bottom: 0">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">捆号扫描：</label>
+                                <div class="layui-input-inline">
+                                    <input type="text" name="bundle_code" autocomplete="off" placeholder="请扫描捆号" value="" id="data-no-scan" class="data-no-scan bundle_code">
+                                </div>
+                            </div>
+                        </div>
+                </blockquote>
+                <div class="layui-form-item">
+                    <div class="layui-input-text" style="float: left;height: 40px;line-height: 40px;">已扫描：<span class="amount_sum" data-amount="0">0</span>（<span class="pack_num">0</span>包）：</div>
+                    <div class="layui-inline" style="float: right;margin-right: 0">
+                        <button id="do-pack-btn" type="button" class="layui-btn layui-btn-disabled">完成装包</button>
+                    </div>
+                </div>
+                <table class="layui-table" id="data_table">
+                    <thead>
+                    <tr>
+                        <th>捆号</th>
+                        <th>打捆银行</th>
+                        <th>所属银行</th>
+                        <th>金额</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="alert_box" style="display: none">
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">包号扫描:</label>
+            <div class="layui-input-inline">
+                <input type="text" name="pack_code" autocomplete="off" placeholder="请扫描包号" value="" id="pack-code-scan" class="data-no-scan pack_code">
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    var dom_bundle = $('.bundle_code');
+    var dom_amount_sum = $('.amount_sum');
+    var dom_pack_num = $('.pack_num');
+    var dom_table = $('#data_table');
+    var dom_tbody = dom_table.find('tbody');
+    dom_bundle.focus();
+    dom_bundle.on("keypress", function(e){
+        var kc = e.which || e.keyCode;
+        if(kc == 13){
+            var thisval = $.trim($(this).val());
+            if(thisval == ""){
+                layer.msg("请扫描捆号！");
+            }else{
+                if(!(new RegExp("^K[a-zA-Z0-9]{4}[0-9]{10}$")).test(thisval)){
+                    this.select();
+                    layer.msg("捆号不正确，请重新扫描！");
+                }else{
+                    if(isDataNoExists(thisval)){
+                        this.select();
+                        layer.msg("捆号已扫描，请勿重复扫描！");
+                    }else{
+                        analyseData(thisval);
+                    }
+                }
+            }
+        }
+    }).focus().select();
+    //取消扫描
+    dom_tbody.on("click", "button.layui-btn-danger", function(){
+        var thisobj = $(this);
+        var dataNo = $.trim(thisobj.parents("tr[data-no]").attr("data-no"));
+        var index = layer.confirm("确定取消捆["+dataNo+"]吗？", function(){
+            thisobj.parents("tr[data-no]").remove();
+            //rangeDataRows();
+            var amount = $.trim(thisobj.parents("tr[data-no]").attr("data-amount"));
+            number_change(2,amount);
+            layer.close(index);
+        });
+    });
+
+    //KA00S1000001020
+    function number_change(aol,amount){
+        var amount_sum = parseInt(dom_amount_sum.attr('data-amount'));
+        var pack_num = parseInt(dom_pack_num.text());
+        if(aol == 1){
+            amount_sum = amount_sum + amount;
+            pack_num = pack_num + 1;
+        }else if(aol == 2){
+            amount_sum = amount_sum - amount;
+            pack_num = pack_num - 1;
+        }
+        dom_amount_sum.attr('data-amount',amount_sum);
+        dom_amount_sum.text(number_format(amount_sum,2,'.',','));
+        dom_pack_num.text(pack_num)
+        var tr_num = dom_tbody.find('tr').length;
+
+        if(tr_num == 20 || tr_num == 40){
+            $('#do-pack-btn').removeClass('layui-btn-disabled');
+        }else{
+            $('#do-pack-btn').removeClass('layui-btn-disabled').addClass('layui-btn-disabled');
+        }
+    }
+    //添加新行，检查捆可用性
+    function analyseData(dataNo){
+        //暂停扫描
+        enableScanFocus(1, false);
+
+        layer.load(2);
+
+        $.get("__ROOT__/api/bank/query_bundle_detail", {bundle_code: dataNo}, function(result){
+            layer.closeAll('loading');
+
+            if(result.err_code == 0){
+                var data = result.data;
+                if(data == null){
+                    layer.msg('捆号不可用！');
+                    dom_bundle.focus().select();
+                }else if(data.bundle_status == 1){
+                    layer.msg('该捆号已装包，请重新扫描！');
+                    dom_bundle.focus().select();
+                }else if(data.is_owner == 0){
+                    layer.msg('该捆号不属于该银行，请重新扫描！');
+                    dom_bundle.focus().select();
+                }else{
+                    var dataNewRow = "<tr data-no='"+dataNo+"' data-amount='"+data.bundle_amount+"'>"
+                            +"<td>"+dataNo+"</td>"
+                            +"<td>"+data.creator_bank_str+"</td>"
+                            +"<td>"+data.owner_bank_str+"</td>"
+                            +"<td>"+data.bundle_amount_str+"</td>"
+                            +"<td><button class='layui-btn layui-btn-danger layui-btn-mini'>取消</button></td>"
+                            +"</tr>";
+
+                    dom_tbody.prepend(dataNewRow);
+                    number_change(1,data.bundle_amount);
+                    dom_bundle.focus().select();
+                }
+
+            }else{
+                layer.msg(result.err_msg);
+            }
+
+            //重新扫描
+            enableScanFocus(1, true);
+        },'json');
+    }
+    //扫描框获取焦点
+    function enableScanFocus(elemNo, flag){
+        var elemId = "";
+
+        //捆
+        if(elemNo == 1){
+            elemId = "data-no-scan";
+        }
+        //包
+        else if(elemNo == 2){
+            elemId = "pack-code-scan";
+        }
+
+        $("#"+elemId).unbind("blur").blur();
+
+        //绑定blur事件
+        if(flag){
+            $("#"+elemId).bind("blur", function(){
+                $(this).focus().select();
+            }).focus().select();
+        }
+    }
+
+    //检查捆号是否已扫描
+    function isDataNoExists(dataNo){
+        var isExists = false;
+
+        var dataRows = dom_tbody.find("tr");
+        if(dataRows.length > 0){
+            dataRows.each(function(i, item){
+                var rowDataNo = $.trim($(this).attr("data-no"));
+                if(dataNo == rowDataNo){
+                    isExists = true;
+                    return false;
+                }
+            });
+        }
+
+        return isExists;
+    }
+
+    //扫描包号，回车验证
+    $("#pack-code-scan").on("keypress", function(e){
+        var kc = e.which || e.keyCode;
+        if(kc == 13){
+            var thisval = $.trim($(this).val());
+            if(thisval == ""){
+                layer.msg('请扫描包号');
+            }else{
+                if(!(new RegExp("^B[a-zA-Z0-9]{4}[0-9]{10}$")).test(thisval)){
+                    $("#pack-code-scan").select();
+                    layer.msg('包号不正确，请重新扫描！');
+                }else{
+                    //console.log('111');
+                    analysePack(thisval);
+                }
+            }
+        }
+    });
+    //检查包可用性
+    function analysePack(dataNo){
+        //暂停扫描
+        enableScanFocus(2, false);
+
+        var load = layer.load();
+        $.get("__ROOT__/api/bank/query_pack_detail", {pack_code: dataNo}, function(result){
+            layer.close(load);
+            if(result && result.err_code == 0){
+                if(result.data == null){
+                    layer.msg("包号可用！");
+                    $(".layui-layer-btn0").removeClass("layui-btn-disabled");
+                }else{
+                    layer.msg("包号已存在，不可用！");
+                }
+            }
+            else{
+                layer.msg("扫描包号错误："+result.err_msg);
+            }
+            //重新扫描
+            enableScanFocus(2, true);
+        },'json');
+    }
+
+    $('#do-pack-btn').click(function () {
+        if($(this).hasClass("layui-btn-disabled")){
+            return false;
+        }
+        var tr_num = dom_tbody.find('tr').length;
+
+        layer.open({
+            type:1,
+            content: $('#alert_box'),
+            area: ['400px', '160px'],
+            btn: ['打包', '取消'],
+            success: function(layero, index){
+                enableScanFocus(1, false);
+                enableScanFocus(2, true);
+                $(".layui-layer-btn0").removeClass("layui-btn-disabled").addClass('layui-btn-disabled');
+            }
+            ,yes: function(index, layero){
+                //console.log($(this));
+                if($('.layui-layer-btn0').hasClass("layui-btn-disabled")){
+                    return false;
+                }
+                enableScanFocus(2, false);
+                var dataNos = [];
+                dom_tbody.find('tr').each(function(i, item){
+                    dataNos.push($.trim($(this).attr("data-no")));
+                });
+                if(dataNos.length == 0){
+                    return layer.msg("提交失败，未检测到有效扫描捆。");
+                }
+                else if(dataNos.length != 20 && dataNos.length != 40){
+                    return layer.msg("提交失败，捆数不符合要求，只能打包20捆或40捆。");
+                }
+
+                var packCode = $.trim($("#pack-code-scan").val());
+                if(packCode == ""){
+                    return layer.msg("提交失败，未检测到有效扫描包。");
+                }
+                if(!(new RegExp("^B[a-zA-Z0-9]{4}[0-9]{10}$")).test(packCode)){
+                    $("#pack-code-scan").select();
+
+                    return layer.msg("包号不正确，请重新扫描。");
+                }
+                var index = layer.confirm("确定提交吗？",function(){
+                    var load = layer.load();
+
+                    $.post("__ROOT__/api/bank/pack",
+                            {
+                                pack_code: packCode,
+                                bundle_codes: dataNos
+                            }, function(result){
+                                layer.close(load);
+
+                                if(result && result.err_code == 0){
+                                    layer.close(index);
+                                    layer.confirm("提交成功！是否继续打包？", {
+                                        skin: "layui-layer-lan",
+                                        closeBtn: 0,
+                                        btn: ["否","继续打包"]
+                                    }, function(){
+                                            location.href = "__ROOT__/admin/inventory/index.html?_t="+(new Date().getTime());
+                                    }, function(){
+                                        location.href = "__ROOT__/admin/inventory/show_pack.html?_t="+(new Date().getTime());
+                                    });
+                                }else{
+                                    return layer.msg("提交失败，"+result.err_msg);
+                                }
+                            },'json');
+
+                    layer.close(index);
+                });
+
+                enableScanFocus(2, true);
+
+            },
+            btn2: function(index, layero){
+                $('#alert_box').hide();
+                enableScanFocus(1, true);
+            },
+            cancel: function(){
+                //右上角关闭回调
+                $('#alert_box').hide();
+                enableScanFocus(1, true);
+                //return false 开启该代码可禁止点击该按钮关闭
+
+            }
+        });
+
+    });
+</script>
+{/block}

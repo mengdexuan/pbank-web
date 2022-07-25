@@ -1,0 +1,273 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <div class="layui-tab layui-tab-brief" lay-filter="docDemoTabBrief">
+        <ul class="layui-tab-title">
+            <li class="layui-this">完整券</li>
+            <li><a href="{:url('/admin/library/damaged')}"> 残损券</a></li>
+        </ul>
+        <div class="layui-tab-content">
+            <div class="layui-tab-item layui-show">
+                <div class="totalnumbox">
+                    总额：
+                    <span class="numbox"><span class="totalnum"></span></span>
+                    <span>(<span class="packnum"></span>)</span>
+                </div>
+                <div class="layui-form-item">
+                    <!--<div class="layui-input-inline w70">
+                        <button type="button" class="layui-btn layui-btn-primary layui-btn-small quick yesterday ">昨天</button>
+                    </div>
+                    <div class="layui-input-inline w70">
+                        <button type="button" class="layui-btn layui-btn-primary layui-btn-small quick today">今天</button>
+                    </div>-->
+                    <div class="layui-input-inline w82">
+                        <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="before">前一天</a>
+                    </div>
+                    <div class="layui-input-inline date-box">
+                        <input type="text" name="beginTime" placeholder="开始日期" id="beginTime"  value="{$start_date}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                    </div>
+                    <div class="layui-input-inline wa date-center">-</div>
+                    <div class="layui-input-inline  date-box">
+                        <input type="text" name="endTime" placeholder="结束日期" id="endTime"  value="{$end_date}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                    </div>
+                    <div class="layui-input-inline w82">
+                        <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="after">后一天</a>
+                    </div>
+                    <div class="layui-input-inline" style="width: 70px;">
+                        <button type="button" class="layui-btn layui-btn-small quick search">查询</button>
+                    </div>
+                    <div class="layui-inline" style="height: 32px;">
+                        <label class="layui-form-label" style="text-align:left;margin-right: -58px;">单位：</label>
+                        <div class="layui-input-inline">
+                            <select class="layui-input" style="cursor: pointer;width: 68px;" id="doConversion">
+                                <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元</option>
+                                <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <table class="new-table" id="data_table">
+                    <thead>
+                        <tr>
+                            <th>包号/捆号</th>
+                            <th class="txtR p-r-20">金额</th>
+                            <th>打包银行</th>
+                            <th>打包时间</th>
+                            <th>入库时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="low">
+                            <td colspan="6" class="text-center">查询中</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="page_box"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    /*初始化时间*/
+    var start = {
+        elem:'focus',
+        istoday: true,
+        choose: function(){
+            $('.layui-input-inline').find('.layui-btn').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        }
+    };
+    /*点击开始时间*/
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    /*点击结束时间*/
+    document.getElementById('endTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    /*今天*/
+    $('.today').click(function () {
+        button_c(this);
+        var date = GetDateStr(0);
+        $('#beginTime').val(date);
+        $('#endTime').val(date);
+        search(1);
+    });
+    /*昨天*/
+    $('.yesterday').click(function () {
+        button_c(this);
+        var date = GetDateStr(-1);
+        $('#beginTime').val(date);
+        $('#endTime').val(date);
+        search(1);
+    });
+    /*前一天*/
+    $('#before').click(function(){
+        var start = $('#beginTime').val();
+        var end = $('#endTime').val();
+        var curDate = '';
+        if(start!=''){
+            curDate = Date.parse(start);
+        }else if(start == '' && end != ''){
+            curDate = Date.parse(end);
+        }else if(start == '' && end == ''){
+            layer.msg('请选择一个时间点！');
+            return false;
+        }
+        var preDate = new Date(curDate - 24*60*60*1000);
+        $('#beginTime').val(getDate(preDate));
+        $('#endTime').val(getDate(preDate));
+        search(1);
+    });
+    /*后一天*/
+    $('#after').click(function(){
+        var start = $('#beginTime').val();
+        var end = $('#endTime').val();
+        var curDate = '';
+        if(end!=''){
+            curDate = Date.parse(end);
+        }else if(start != '' && end == ''){
+            curDate = Date.parse(start);
+        }else if(start == '' && end == ''){
+            layer.msg('请选择一个时间点！');
+            return false;
+        }
+        var nextDate = new Date(curDate + 24*60*60*1000);
+        $('#beginTime').val(getDate(nextDate));
+        $('#endTime').val(getDate(nextDate));
+        search(1);
+    });
+    /*点击查询按钮*/
+    $('.search').click(function () {
+        button_c(this);
+        var start_date = $('#beginTime').val();
+        var end_date = $('#endTime').val();
+        if(get_time(start_date) >get_time(end_date)){
+            layer.msg('开始时间不能大于结束时间');
+            return false;
+        }
+        if(start_date == '' && end_date == ''){
+            layer.msg('请选择开始时间与结束时间');
+            return false;
+        }
+        search(1);
+    });
+    /*按钮颜色选中函数*/
+    function button_c(_this) {
+        $('.layui-input-inline').find('.layui-btn').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        $(_this).removeClass('layui-btn-primary');
+    }
+    /*查询完整券接口*/
+    function search(curr){
+        layer.load(2);
+        var begin_time = $.trim($('#beginTime').val());
+        var end_time = $.trim($('#endTime').val());
+        var url = "__ROOT__/api/bank/query_available_packs";
+        var op = {
+            cur_page: curr || 1,
+            start_date: begin_time,
+            end_date: end_time
+        };
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var totalnum = number_format(data.pack_sum,2,'.',',');
+            var packnum = data.pack_cnt;
+
+            if($('.packnum').parent().find('span').length == 1){
+                var bundleNum = data.bundleNum;//捆
+                // var handleNum = data.handleNum;//把
+                var ival = parseInt(bundleNum);
+                // var nval = parseInt(handleNum);
+                if (!isNaN(ival) && bundleNum != undefined && bundleNum > 0) {
+                   $('.packnum').after(' <span class="bundleNum">+'+bundleNum+'捆</span> ');
+                }
+
+                // if (!isNaN(nval) && handleNum != undefined && handleNum > 0) {
+                //     if (isNaN(ival) || bundleNum <= 0) {
+                //       $('.packnum').after(' <span class="handleNum">+'+handleNum+'把</span> '); 
+                //     }else{
+                //       $('.bundleNum').after(' <span class="handleNum">+'+handleNum+'把</span> '); 
+                //     }
+                // }                    
+            }
+
+
+            $('.totalnum').html(totalnum);
+            $('.packnum').html(packnum+'包');
+
+            var packs = data.packs;
+            var html_str = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < packs.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td>"+packs[i].pack_code+"</td>";
+                    html_str = html_str + "<td class='txtR p-r-20 doVersionOne' number="+packs[i].pack_amount_str+">"+packs[i].pack_amount_str+"</td>";
+                    html_str = html_str + "<td>"+packs[i].creator_bank_str+"</td>";
+                    html_str = html_str + "<td>"+packs[i].pack_time+"</td>";
+                    html_str = html_str + "<td>"+packs[i].in_time+"</td>";
+                    if(packs[i].pack_code.substr(0,1) == 'B'){
+                       html_str = html_str + '<td><a href="__ROOT__/admin/pack/index/pack_code/'+packs[i].pack_code+'.html">查看</a></td>'; 
+                    }else if(packs[i].pack_code.substr(0,1) == 'K'){
+                       html_str = html_str + '<td><a href="__ROOT__/admin/bundle/index/bundle_code/'+packs[i].pack_code+'.html">查看</a></td>'; 
+                    }else if(packs[i].pack_code.substr(0,1) == 'H'){
+                       html_str = html_str + '<td><a href="__ROOT__/admin/holds/page/bundle_code/'+packs[i].pack_code+'.html">查看</a></td>'; 
+                    }
+                    html_str = html_str + '</tr>';
+                }
+                if(html_str == ''){
+                    html_str = '<tr class="low"><td colspan="6" class="text-center">暂无数据</td></tr>';
+                }
+                laypage({
+                    cont: 'page_box',
+                    pages: data.total_page,
+                    curr: curr || 1,
+                    jump: function(obj, first){
+                        if(!first){
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                html_str = '<tr class="low"><td colspan="6" class="text-center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="window.reload();">刷新</a></td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+            $("#doConversion").trigger("change");
+        });
+    }
+    /*自动执行查询完整券*/
+    search();
+    //元万元亿切换
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+
+        $('.doVersionOne').each(function(i,e){
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+            
+            $(this).text(numberNew);                
+        });
+    });
+</script>
+{/block}

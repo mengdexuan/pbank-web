@@ -1,0 +1,302 @@
+{extend name="base" /}
+{block name="body"}
+<style type="text/css">
+    .w70{
+        width: 70px !important;
+        margin-left: 34px; 
+    }
+</style>
+<div class="layui-body">
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <div class="title-box">
+                <div class="title">GZH生成文件查询</div>
+            </div>
+            <form class="layui-form">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">任务号:</label>
+                    <div class="layui-input-block" style="width: 360px;">
+                      <input type="text" name="taskCode" placeholder="任务号" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">报送银行:</label>
+                    <div class="layui-input-block" style="width: 360px;">
+                      <input type="text" name="sendBankName" placeholder="报送银行" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">业务类型:</label>
+                    <div class="layui-input-block">
+                        <input type="checkbox" title="全部" lay-skin="primary" id="c_all" lay-filter="c_all" checked>
+                        <input type="checkbox" name="bizType" lay-skin="primary" lay-filter="c_one" class="bizType"  title="向人行交款" value="3">
+                        <input type="checkbox" name="bizType" lay-skin="primary" lay-filter="c_one" class="bizType"  title="从人行取款" value="4">
+                        <input type="checkbox" name="bizType" lay-skin="primary" lay-filter="c_one" class="bizType"  title="跨行调款" value="0">
+                        <input type="checkbox" name="bizType" lay-skin="primary" lay-filter="c_one" class="bizType"  title="被代理行取现" value="2">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">入库时间:</label>
+                    <div class="layui-input-block">
+                        <div class="layui-input-inline date-box">
+                            <input type="text" name="beginTime" placeholder="开始日期" id="beginTime"  value="{$beginTime}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                        </div>
+                        <div class="layui-input-inline wa date-center">-</div>
+                        <div class="layui-input-inline date-box">
+                            <input type="text" name="beginTime" placeholder="结束日期" id="endTime"  value="{$endTime}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+<!--            <div class="layui-input-inline w70">-->
+<!--                <a href="{:url('/admin/files/gedit',['type'=>'gzh'])}"><button type="button" class="layui-btn layui-btn-small">GZH生成策略</button></a>-->
+<!--            </div>-->
+            <div class="layui-input-inline w70">
+                <button type="button" class="layui-btn layui-btn-small search" style="margin-left: 80px;">查询</button>
+            </div>
+            <div class="layui-inline" style="float: right;">
+                <label class="layui-form-label">单位：</label>
+                <div class="layui-input-inline">
+                    <select class="layui-input" style="cursor: pointer;" id="doConversion">
+                        <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元</option>
+                        <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元</option>
+                    </select>
+                </div>
+            </div>
+            <table class="layui-table" id="data_table" style="table-layout:fixed;">
+                <div style="margin-top: 20px;margin-left: 18px;">
+                    <strong>汇总统计：任务总数:</strong><span id="taskTotal">0</span>笔   <strong>任务总金额:</strong><span id="taskMoneyTotal" class="doVersionOne">0元</span>  <strong>文件总数:</strong><span id="fileTotal">0</span>个   <strong>文件总大小:</strong><span id="fileSizeTotal" class="">0</span>
+                </div>
+                <thead>
+                <tr>
+                    <th width="15%">任务号</th>
+                    <th width="22%">GZH文件名称</th>
+                    <th width="15%">报送银行</th>
+                    <th width="13%">入库时间</th>
+                    <th width="9%">业务类型</th>
+                    <th width="8%">任务金额</th>
+                    <th width="18%">文件保存目录</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr class="low"><td colspan="7" class="text-center">查询中</td></tr>
+                </tbody>
+            </table>
+            <div id="page_box"></div>   
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script src="__JS__/layui/layui.js"></script>
+<script>
+    //时间插件
+    var start = {
+        elem:'focus',
+        istoday: true
+        ,choose: function(datas){
+            $('.layui-input-inline').find('.quick').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        }
+    };
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    document.getElementById('endTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+
+    //搜索
+    $('.search').click(function () {
+        search(1);
+    });
+    function search(curr){
+        var begin_time = $.trim($('#beginTime').val()) + ' 00:00:00';
+        var end_time = $.trim($('#endTime').val()) + ' 23:59:59';
+        var taskCode = $.trim($('input[name="taskCode"]').val());
+        var sendBankName = $.trim($('input[name="sendBankName"]').val());
+        var bizType = '';
+        $(".bizType").each(function(){
+            if ($(this).prop('checked') === true) {
+                var thisVal = $(this).val();
+                bizType += ','+thisVal;
+            }
+        });
+        var bizType = bizType.substring(1);
+        if(!check_date(begin_time,end_time)){
+            return false;
+        }
+        layer.load(2);
+        var url = "__ROOT__/api/bank/FgzhList";
+        var op = {
+            beginTime:begin_time,
+            endTime:end_time,
+            sendBankName: sendBankName,
+            taskCode: taskCode,
+            bizType: bizType,
+            pageNo: curr || 1,
+            pageSize: 10,
+            status: 1
+        };
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var html_str = '';
+            if(result.success && data != null){
+                var content = data.pageInfo.content;
+                var countInfo = data.countInfo;
+                $('#taskTotal').html(countInfo.taskTotal);
+                $('#taskMoneyTotal').html(countInfo.taskMoneyTotal);
+                $('#fileTotal').html(countInfo.fileTotal);
+                $('#fileSizeTotal').html(countInfo.fileSizeTotal);
+                for(var i = 0; i < content.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td>"+content[i].taskCode+"</td>";
+                    html_str = html_str + "<td style='overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' title='"+content[i].gzhName+"'>"+content[i].gzhName+"</td>";
+                    html_str = html_str + "<td>"+content[i].sendBankName+"</td>";
+                    html_str = html_str + "<td style='overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' title='"+content[i].createTime+"'>"+content[i].createTime+"</td>";
+                    html_str = html_str + "<td style='overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' title='"+content[i].taskType+"'>"+content[i].taskType+"</td>";
+                    html_str = html_str + "<td style='overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' title='"+content[i].taskMoney+"元' class='doVersionOne'>"+content[i].taskMoney+"</td>";
+                    html_str = html_str + "<td style='overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' title='"+content[i].gzhSavePath+"'>"+content[i].gzhSavePath+"</td>";
+                    html_str = html_str + '</tr>';
+                }
+                if(html_str == ''){
+                    html_str = '<tr class="low"><td colspan="7" class="text-center">暂无数据</td></tr>';
+                }
+                laypage({
+                    cont: 'page_box',
+                    pages: data.pageInfo.totalPages,
+                    curr: curr || 1,
+                    jump: function(obj, first){
+                        if(!first){
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                html_str = '<tr><td colspan="7" class="text-center">数据错误：'+result.msg+'</td></tr>';
+            }
+
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+            $("#doConversion").trigger("change");
+            /*删除*/
+            $('.ajax-del').on('click', function () {
+                var task_code = $(this).attr('data');
+                layer.open({
+                    shade: false,
+                    content: '确定删除？',
+                    btn: ['确定', '取消'],
+                    yes: function (index) {
+                        $.ajax({
+                            url: "__ROOT__/api/bank/content_del",
+                            data:{task_code:task_code},
+                            type: "post",
+                            success: function (info) {
+                                if (info.err_code === 0) {
+                                    setTimeout(function () {
+                                        //location.href = info.url;
+                                        location.reload();
+                                    }, 1000);
+                                    info.err_msg = '删除成功';
+                                }
+                                layer.msg(info.err_msg);
+                            }
+                        });
+                        layer.close(index);
+                    }
+                });
+                return false;
+            });
+        });
+    };
+    //运行
+    search(1);
+    //元万元亿切换
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+
+        $('.doVersionOne').each(function(i,e){
+            if (!$(this).attr('number')) {
+                $(this).attr('number',$(this).text());
+            }
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+            
+            $(this).text(numberNew);                
+        });
+    });
+</script>
+<script type="text/javascript">
+layui.use('form', function () {
+        var form = layui.form();
+        //默认全选
+        if($('#c_all').prop('checked')){
+            $(".bizType").prop("checked", true);
+            form.render('checkbox');
+        }
+        //全选
+        form.on('checkbox(c_all)', function (data) {
+            var a = data.elem.checked;
+            if (a == true) {
+                $(".bizType").prop("checked", true);
+                form.render('checkbox');
+            } else {
+                $(".bizType").prop("checked", false);
+                form.render('checkbox');
+            }
+        });
+        //反选
+        form.on('checkbox(f_all)', function (data) {
+            var item = $(".bizType");
+            item.each(function () {
+                if ($(this).prop("checked")) {
+                    $(this).prop("checked", false);
+                } else {
+                    $(this).prop("checked", true);
+                }
+            })
+            form.render('checkbox');
+        });
+        //有一个未选中全选取消选中
+        form.on('checkbox(c_one)', function (data) {
+            var item = $(".bizType");
+            for (var i = 0; i < item.length; i++) {
+                if (item[i].checked == false) {
+                    $("#c_all").prop("checked", false);
+                    form.render('checkbox');
+                    break;
+                }
+            }
+            //如果都勾选了  勾上全选
+            var  all=item.length;
+            for (var i = 0; i < item.length; i++) {
+                if (item[i].checked == true) {
+                    all--;
+                }
+            }
+            if(all==0){
+            $("#c_all").prop("checked", true);
+            form.render('checkbox');}
+        });
+});
+</script>
+{/block}

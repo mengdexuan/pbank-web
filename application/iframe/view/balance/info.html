@@ -1,0 +1,131 @@
+{extend name="base" /}
+{block name="css"}
+{/block}
+{block name="body"}
+<div class="layui-tab layui-tab-brief">
+    <div class="layui-tab-content">
+        <span class="layui-breadcrumb">
+            <a href="{:url('iframe/balance/index',['bank_code'=>$bank_key])}">库存现金余量报表</a>
+            <a><cite>详情</cite></a>
+        </span>
+        <div class="layui-form-item" style="margin:20px 0">
+            上报时间：{$last_time}
+        </div>
+        <div>
+        <div class="layui-inline" style="height: 32px;">
+            <label class="layui-form-label" style="text-align:left;margin-right: -58px;">单位：</label>
+            <div class="layui-input-inline">
+                <select class="layui-input" style="cursor: pointer;width: 68px;" id="doConversion">
+                    <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元</option>
+                    <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元</option>
+                </select>
+            </div>
+        </div>
+            <div class="hideLineBox" style="display:inline-block;margin-left:30px;">
+                <input type="checkbox" name="hideLineBtn" id="hideLine">
+                <label for="hideLine">隐藏空行</label>
+            </div>
+        </div>
+        <table class="new-table" style="width: 600px">
+            <thead>
+                <tr>
+                    <th style="width:33%;">版别</th>
+                    <th style="width:33%;" class="txtR">库存完整券(元)</th>
+                    <th style="width:33%;" class="txtR">库存残损券(元)</th>
+                    <th style="width:0;margin:0;padding:0"></th>
+                </tr>
+            </thead>
+            <tbody>
+            {volist name="valuta_info" id="vo"}
+            <tr class="low low-sum">
+                <td>
+                    {$vo['valuta_name']}
+                    <input type="hidden" name="valuta_value[{$vo['valuta_code']}]" value="{$vo['valuta_value']}">
+                </td>
+                <td class="txtR doVersionOne">{if isset($vo['full_amount']) && $vo['full_amount'] != 0}{:number_format($vo['full_amount'],2,'.',',')}{else}--{/if}</td>
+                <td class="txtR doVersionOne">{if isset($vo['damaged_amount']) && $vo['damaged_amount'] != 0}{:number_format($vo['damaged_amount'],2,'.',',')}{else}--{/if}</td>
+                <td></td>
+            </tr>
+            {/volist}
+            <tr class="low">
+                <td>小计</td>
+                <td class="doVersionOne">{if isset($stock_info['full_amount'])}{:number_format($stock_info['full_amount'],2,'.',',')}{else}0{/if}</td>
+                <td class="doVersionOne">{if isset($stock_info['damaged_amount'])}{:number_format($stock_info['damaged_amount'],2,'.',',')}{else}0{/if}</td>
+                <td></td>
+            </tr>
+            <tr class="low">
+                <td>总计</td>
+                <td colspan="2" class="doVersionOne">
+                    {if isset($stock_info['amount'])}{:number_format($stock_info['amount'])}{else}0{/if}
+                </td>
+                <td></td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="low">
+            <span style="margin-left:20px;">备注</span>
+            <span>
+                {$note}
+            </span>
+        </div>
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+    $(function(){
+        // 隐藏空行
+        function hideLine(){
+            if($('#hideLine').is(':checked')){
+                $('.low-sum').each(function(){
+                    var w = $(this).find('td').eq(1).html();
+                    var c = $(this).find('td').eq(2).html();
+                    //console.log(w +'--'+ c)
+                    if( w == '--' && c == '--'){
+                        $(this).hide();
+                    }
+                })
+            }else{
+                $('.low-sum').each(function(){
+                    $(this).show();
+                })
+            }
+        }
+        hideLine();
+        $('#hideLine').click(function(){
+            hideLine();
+        })
+    });
+    //元万元亿切换
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+
+        $('.doVersionOne').each(function(i,e){
+            if (!$(this).attr('number')) {
+                $(this).attr('number',$(this).text());
+            }
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+            
+            $(this).text(numberNew);                
+        });
+    });
+
+</script>
+{/block}

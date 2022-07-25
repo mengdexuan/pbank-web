@@ -1,0 +1,11 @@
+{
+	"repositories": {
+	    "packagist": {
+	        "type": "composer",
+	        "url": "https://packagist.phpcomposer.com"
+	    }
+	},
+    "require": {
+        "elasticsearch/elasticsearch": "~6.7.0"
+    }
+}

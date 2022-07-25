@@ -1,0 +1,110 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <input type="hidden" class="bank_code" value="{$bank_code}">
+
+        <div class="layui-tab-content">
+
+
+        <span class="layui-breadcrumb">
+        <a href="{:url('admin/digital/index')}">数字货币银行列表</a>
+        <a><cite>{:get_bank($bank_code)}数字货币流水</cite></a>
+        </span>
+            <div class="layui-tab-item layui-show">
+
+                <div class="info-item" style="margin-top: 20px;">
+                    <div class="info-inline">
+                        <label class="info-label" style="width: 110px;">当前数字货币总量</label>
+                        <div class="info-text">
+                            <span class="digital_sum">0</span>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <table class="new-table" id="data_table">
+                    <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>摘要</th>
+                        <th>收入</th>
+                        <th>支出</th>
+                        <th>结余</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" class="text-center">查询中</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="page_box"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+
+    function search(curr){
+        layer.load(2);
+        var url = "__ROOT__/api/bank/query_bank_record_detail";
+        var op = {
+            bank_code : $('.bank_code').val(),
+            cur_page: curr || 1
+        };
+
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var records = data.records;
+            var html_str = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < records.length; i++){
+                    html_str = html_str + "<tr>";
+                    html_str = html_str + "<td>"+records[i].created+"</td>";
+                    html_str = html_str + "<td>跨行调款</td>";
+                    if(records[i].amount >= 0){
+                        html_str = html_str + "<td>"+records[i].amount_str+"</td>";
+                        html_str = html_str + "<td>-</td>";
+                    }else{
+                        html_str = html_str + "<td>-</td>";
+                        html_str = html_str + "<td>"+records[i].amount_str+"</td>";
+                    }
+                    html_str = html_str + "<td>"+records[i].balance_str+"</td>";
+                    html_str = html_str + '<tr>';
+                }
+                if(html_str == ''){
+                    html_str = '<tr></tr><td colspan="7" class="text-center">暂无数据</td></tr>';
+                }
+                $('.digital_sum').html(data.last_balance_str);
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = '<tr><td colspan="5" class="text-center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="window.reload();">刷新</a></td></tr>';
+            }
+                $('#data_table').find('tbody').html(html_str);
+                $('#data_table').find('tbody').hide();
+                $('#data_table').find('tbody').fadeIn(500);
+
+        });
+    };
+    //运行
+    search();
+
+</script>
+{/block}

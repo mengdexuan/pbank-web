@@ -1,0 +1,104 @@
+{extend name="base" /}
+{block name="css"}
+{/block}
+{block name="body"}
+<style>
+    .info-item .info-inline .info-label{
+        text-align: right;
+        margin-right: 15px;
+    }
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <span class="layui-breadcrumb">
+                <a href="{:url('admin/bank/index')}">商行列表</a>
+                <a href="{:url('admin/bank/dot',['bank_code'=>$data['bank_code']])}">{:get_bank($data.bank_code)}</a>
+                <a><cite>{$branch_name}</cite></a>
+            </span>
+
+            <div class="info-item" style="margin-top: 30px">
+                <div class="info-inline">
+                    <label class="info-label">银行名称</label>
+                    <div class="info-text">
+                        {:get_bank($data.bank_code)}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">网点编码</label>
+                    <div class="info-text">
+                        {$data.branch_code}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">支行名称</label>
+                    <div class="info-text">
+                        {$data.branch_short_name}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">支行全称</label>
+                    <div class="info-text">
+                        {$data.branch_name}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">网点类型</label>
+                    <div class="info-text">
+                        {if $data['branch_type'] == 0}
+                            普通网点
+                        {elseif $data['branch_type'] == 1}
+                            金库
+                        {/if}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">网点代理类型</label>
+                    <div class="info-text">
+                        {if $data['agent_type'] == 0}
+                            普通
+                        {elseif $data['agent_type'] == 1}
+                            代理网点
+                        {elseif $data['agent_type'] == 2}
+                            被代理网点
+                        {elseif $data['agent_type'] == 3}
+                        代理&被代理
+                        {/if}
+                    </div>
+                </div>
+            </div>
+            {if $data['agent_type'] == 2}
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">代理网点名称</label>
+                    <div class="info-text">
+                        {:get_bank_branch($data.agent_branch_code)}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">代理网点编码</label>
+                    <div class="info-text">
+                        {$data.agent_branch_code}
+                    </div>
+                </div>
+            </div>
+            {/if}
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+{/block}

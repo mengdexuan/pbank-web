@@ -1,0 +1,259 @@
+{extend name="base" /}
+{block name="css"}
+{/block}
+{block name="body"}
+<style>
+    .layui-form-label {
+        width: 100px;
+    }
+    .layui-form-item .layui-input-inline {
+        width: 325px;
+    }
+    .dot-code {
+        display: none;
+    }
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <span class="layui-breadcrumb">
+                <a href="{:url('admin/bank/index')}">商行列表</a>
+                <a><cite>{$bank}</cite><input type="hidden" id="bank_code" value="{$bank_code}"></a>
+            </span>
+
+            <div class="layui-tab layui-tab-brief" lay-filter="docDemoTabBrief">
+                <ul class="layui-tab-title">
+                    <li class="layui-this">网点列表</li>
+                    <li class="showManage">添加网点</li>
+                </ul>
+                <div class="layui-tab-content">
+                    <div class="layui-tab-item layui-show">
+                        <table class="new-table" id="data_table">
+                            <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>网点名称</th>
+                                <th>网点编码</th>
+                                <th>网点类型</th>
+                                <th>网点代理类型</th>
+                                <th>代理网点名称</th>
+                                <th>代理网点编码</th>
+                                <th>操作</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr><td colspan="8" class="text-center">查询中</td></tr>
+                            </tbody>
+                        </table>
+                        <div id="page_box"></div>
+                    </div>
+                    <div class="layui-tab-item">
+                        <form class="layui-form form-container" action="{:url('/api/bank/add_bank_branch')}" method="post">
+                            <div class="layui-form-item" style="display:none;">
+                                <label class="layui-form-label">银行编码</label>
+                                <div class="layui-input-inline">
+                                    <input type="text" name="bank_code" lay-verify="required" placeholder="请输入银行编码" autocomplete="off" class="layui-input" value="{$bank_code}">
+                                </div>
+                                <div class="layui-form-mid layui-word-aux"></div>
+                            </div>
+                            <div class="layui-form-item" style="margin-top:30px;">
+                                <label class="layui-form-label">网点编码</label>
+                                <div class="layui-input-inline">
+                                    <input type="text" name="branch_code" lay-verify="required" placeholder="请输入网点编码" autocomplete="off" class="layui-input">
+                                </div>
+                                <div class="layui-form-mid layui-word-aux"></div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">支行名称</label>
+                                <div class="layui-input-inline">
+                                    <input type="text" name="branch_short_name" lay-verify="required" placeholder="请输入支行名称" autocomplete="off" class="layui-input">
+                                </div>
+                                <div class="layui-form-mid layui-word-aux"></div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">支行全称</label>
+                                <div class="layui-input-inline">
+                                    <input type="text" name="branch_name" lay-verify="required" placeholder="请输入支行全称" autocomplete="off" class="layui-input">
+                                </div>
+                                <div class="layui-form-mid layui-word-aux"></div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">网点类型</label>
+                                <div class="layui-input-inline">
+                                    <input type="radio" name="branch_type" value="0" title="普通网点" checked>
+                                    <input type="radio" name="branch_type" value="1" title="金库">
+                                </div>
+                                <div class="layui-form-mid layui-word-aux"></div>
+                            </div>
+                            <div class="layui-form-item dot-type">
+                                <label class="layui-form-label">网点代理类型</label>
+                                <div class="layui-input-inline" style="width:460px;">
+                                    <input type="radio" name="agent_type" value="0" title="普通" checked>
+                                    <input type="radio" name="agent_type" value="1" title="代理网点">
+                                    <input type="radio" name="agent_type" value="2" title="被代理网点">
+                                    <input type="radio" name="agent_type" value="3" title="代理&被代理">
+                                </div>
+                                <div class="layui-form-mid layui-word-aux"></div>
+                            </div>
+                            <div class="layui-form-item dot-code">
+                                <label class="layui-form-label">代理网点编码</label>
+                                <div class="layui-input-inline textare-box">
+                                    <input type="text" name="agent_branch_code"  placeholder="请输入代理网点编码" autocomplete="off" class="layui-input">
+                                </div>
+                                <div class="layui-form-mid layui-word-aux"></div>
+                            </div>
+
+                            <div class="layui-form-item">
+                                <div class="layui-input-block">
+                                    <button class="layui-btn" lay-submit lay-filter="*">保存</button>
+                                    <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<input type="hidden" id="showa" value="<?php echo isset($_GET['a'])?$_GET['a']:'';?>">
+{/block}
+{block name="script"}
+<script>
+    var showa = $('#showa').val();
+    function search(curr){
+        layer.load(2);
+        var bank_code = $('#bank_code').val();
+        var url = "__ROOT__/api/bank/query_bank_branch";
+        var op = {
+            bank_code: bank_code,
+            cur_page: curr || 1,
+            cur_num: 20,
+            a:showa
+        };
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var branchs = data.branchs;
+            console.log(branchs);
+            var html_str = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < branchs.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td>"+i+"</td>";
+                    html_str = html_str + "<td>"+branchs[i].branch_name+"</td>";
+                    html_str = html_str + "<td>"+branchs[i].branch_code+"</td>";
+                    html_str = html_str + "<td>"+branchs[i].branch_type_str+"</td>";
+                    html_str = html_str + "<td>"+branchs[i].agent_type_str+"</td>";
+                    html_str = html_str + "<td>"+branchs[i].agent_branch_code_str+"</td>";
+                    html_str = html_str + "<td>"+branchs[i].agent_branch_code+"</td>";
+                    if (result.show) {
+                        html_str = html_str + '<td><a href="javascript:;" class="delete m-r-10 red" data="'+branchs[i].branch_code+'">删除</a><a href="__ROOT__/admin/bank/modify/branch_code/'+branchs[i].branch_code+'.html" class="m-r-10">修改</a><a href="__ROOT__/admin/bank/view/branch_code/'+branchs[i].branch_code+'.html">查看</a></td>';
+                    }else{
+                        html_str = html_str + '<td><a href="__ROOT__/admin/bank/view/branch_code/'+branchs[i].branch_code+'.html">查看</a></td>';
+                    }
+                    html_str = html_str + '<tr>';
+                }
+                if(html_str == ''){
+                    html_str = '<tr><td colspan="7" class="text-center">暂无数据</td></tr>';
+                }
+                //console.log(html_str);
+                if (!result.show) {
+                    $(".showManage").hide();
+                }
+
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = '<tr><td colspan="8" class="text-center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="window.reload();">刷新</a></td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+
+            $('.delete').each(function(){
+                $(this).click(function(){
+                    var branch_code = $(this).attr('data');
+                    layer.open({
+                        shade: false,
+                        content: '确定删除？',
+                        btn: ['确定', '取消'],
+                        yes: function (index) {
+                            $.ajax({
+                                url: '__ROOT__/api/bank/del_bank_branch',
+                                data:{branch_code:branch_code},
+                                type: "post",
+                                success: function (info) {
+                                    if (info.err_code === 0) {
+                                        setTimeout(function () {
+                                            //location.href = info.url;
+                                            location.reload();
+                                        }, 1000);
+                                        info.err_msg = '删除成功';
+                                    }
+                                    layer.msg(info.err_msg);
+                                }
+                            });
+                            layer.close(index);
+                        }
+                    });
+                    return false;
+                })
+
+            })
+        });
+
+    };
+    search();
+
+
+    $('.dot-type').click(function(){
+        console.log('dianji');
+        if($('input[name="agent_type"]:checked').val() == 2 || $('input[name="agent_type"]:checked').val() == 3){
+            $('.dot-code').show();
+        }else {
+            $('.dot-code').hide();
+            $('input[name="agent_branch_code"]').val('');
+        }
+    })
+    form.on('submit(*)', function(data){
+        var type = $('input[name="agent_type"]:checked').val();
+        var code = $('input[name="agent_branch_code"]').val();
+        if ((type == 2 || type==3) && code ==''){
+            layer.msg('请输入代理网点编码！');
+            return false;
+        }
+        if (type != 2 && type != 3) {
+            $('input[name="agent_branch_code"]').val('');
+        }
+        console.log($(data.form).serialize());
+        $.ajax({
+            url: data.form.action,
+            type: data.form.method,
+            data: $(data.form).serialize(),
+            success: function (info) {
+                if (info.err_code == 0) {
+                    setTimeout(function () {
+                        document.location.reload();
+                    }, 1000);
+                    info.err_msg = '提交成功'
+                }
+                layer.msg(info.err_msg);
+            }
+        });
+        return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+    });
+
+
+</script>
+{/block}

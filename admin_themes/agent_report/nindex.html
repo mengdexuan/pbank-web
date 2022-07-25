@@ -1,0 +1,449 @@
+{extend name="base" /}
+{block name="body"}
+<style>
+    .report.on,
+    .chart.on {
+        background: #009688;
+        color: #fff;
+    }
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <div class="layui-tab">
+                <ul class="layui-tab-title">
+                    <a href="__ROOT__/admin/agent_report/index"><li class="layui-this">被代理行取款</li></a>
+                    <a href="__ROOT__/admin/agent_report/appoint"><li>被代理行交款</li></a>
+                </ul>
+            </div>
+            <form class="" id="search" action="{:url('admin/agent_report/download_agent_report',['query_flag'=>$query_flag,'type'=>1,'inOutType'=>1,'downloadType'=>'index'])}" style="margin-top: 10px;">
+                <div class="layui-form-item">
+                    <input type="hidden" id="query_flag" value="{$query_flag}">
+                    <div class="layui-input-inline" style="width: 60px;margin-right: 12px;">
+                        <a href="{:url('admin/agent_report/index',['query_flag'=>2])}" class="layui-btn layui-btn-small {if $query_flag < 2}layui-btn-primary{/if}">日报</a>
+                    </div>
+                    <div class="layui-input-inline" style="width: 60px;margin-right: 12px;">
+                        <a href="{:url('admin/agent_report/index',['query_flag'=>1])}" class="layui-btn layui-btn-small {if $query_flag != 1}layui-btn-primary{/if}">周报</a>
+                    </div>
+                    <div class="layui-input-inline" style="width: 60px;margin-right: 12px;">
+                        <a href="{:url('admin/agent_report/index',['query_flag'=>0])}" class="layui-btn layui-btn-small {if $query_flag != 0}layui-btn-primary{/if}">月报</a>
+                    </div>
+                    <div class="layui-input-inline" {if $query_flag >= 1} style="width: 530px;" {else} style="width: 340px;"{/if}>
+                        {if $query_flag < 2}
+                        <select name="year" id="year_select" {if $query_flag == 1}class="year_select"{/if} style="height: 32px">
+                            {volist name="years" id="vo"}
+                            <option value="{$vo}" {if $vo == date('Y',time())}selected{/if}>{$vo}年</option>
+                            {/volist}
+                        </select>
+                        {/if}
+                        {if $query_flag == 1}
+                            <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary prev">&lt;&nbsp;前一周</a>
+                        {/if}
+                        {if $query_flag == 2}
+                        <div class="layui-input-inline w82">
+                            <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="before">前一天</a>
+                        </div>
+                        {/if}
+                        {if $query_flag == 0}
+                            <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary prev">&lt;&nbsp;前一月</a>
+                        {/if}
+                        {if $query_flag < 2}
+                        <select name="month" style="height: 32px" id="m_month_select">
+                            {volist name="month_weeks" id="vo"}
+                            <option value="{$i}" data='{$vo}' {if $i == $cur_month_week }selected{/if}>{$vo}</option>
+                            {/volist}
+                        </select>
+                        {/if}
+                        {if $query_flag == 1}
+                            <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary next">后一周&nbsp;&gt;</a>
+                        {/if}
+                        {if $query_flag == 2}
+                            <div class="layui-input-inline date-box">
+                                <input type="text" name="beginTime" placeholder="选择日期" id="beginTime" value="{$query_date}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                            </div>
+                            <div class="layui-input-inline wa date-center">-</div>
+                            <div class="layui-input-inline date-box">
+                                <input type="text" name="endTime" placeholder="选择日期" id="endTime" value="{$query_date}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                            </div>
+                            <div class="layui-input-inline w82">
+                            <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="after">后一天</a>
+                            </div>
+                        {/if}
+                        {if $query_flag == 0}
+                            <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary next">后一月&nbsp;&gt;</a>
+                        {/if}
+
+                        <input type="hidden" name="date" id="curr_date" value="">
+                    </div>
+                    <div class="layui-input-inline" >
+                        <button class="layui-btn layui-btn-small">{if $query_flag == 1}周报{/if}{if $query_flag == 2}日报{/if}{if $query_flag == 0}月报{/if}统计数据下载</button>
+                    </div>
+                    <div class="layui-inline" style="height: 32px;">
+                        <label class="layui-form-label" style="text-align:left;margin-right: -58px;">单位：</label>
+                        <div class="layui-input-inline">
+                            <select class="layui-input" style="cursor: pointer;width: 68px;" id="doConversion">
+                                <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元</option>
+                                <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元</option>
+                            </select>
+                        </div>
+                    </div>
+<!--                     <div style="display:inline-block;float:right" >
+                        <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary report">报表形式</a>
+                        <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary chart on">图表形式</a>
+                    </div> -->
+                </div>
+            </form>
+
+            <div id="container" style="height: 400px; margin: 0 auto;display:none;"></div>
+            <table id="reportForm" class="layui-table" style="">
+                <thead>
+                    <tr>
+                        <th>代理行名称</th>
+                        <th>配钞金额合计</th>
+                        <th>100元</th>
+                        <th>50元</th>
+                        <th>20元</th>
+                        <th>10元</th>
+                        <th>5元</th>
+                        <th>2元</th>
+                        <th>1元</th>
+                        <th>5角</th>
+                        <th>2角</th>
+                        <th>1角</th>
+                        <th>5分</th>
+                        <th>2分</th>
+                        <th>1分</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    $(function () {
+        var query_flag = $('#query_flag').val();
+        // 报表图表切换
+        $('.report').click(function(){
+            $(this).addClass('on');
+            $('.chart').removeClass('on');
+            $('#container').hide();
+            $('#reportForm').show();
+            select_data();
+        });
+        $('.chart').click(function(){
+            $(this).addClass('on');
+            $('.report').removeClass('on');
+            $('#reportForm').hide();
+            $('#container').show();
+            select_data();
+        });
+        if (query_flag == 2) {
+            var _type = 'today';
+            var start = {
+                elem:'focus',
+                istoday: true
+                ,choose: function(datas){
+                    select_data();
+                    // $('.layui-input-inline').find('.layui-btn').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+                }
+            };
+            document.getElementById('beginTime').onclick = function(){
+                start.elem = this;
+                laydate(start);
+            };
+            document.getElementById('endTime').onclick = function(){
+                start.elem = this;
+                laydate(start);
+            };            
+        }
+        // 前一月 前一周
+        $('.prev').click(function(){
+            var old_date = $('#m_month_select').val();
+            var new_date = Number(old_date)-1;
+            if(new_date<1){
+                layer.msg('已到达本年第一条数据！');
+                return false;
+            }
+            $('#m_month_select').val(new_date);
+            select_data();
+        });
+        $('#before').click(function(){
+            var start = $('#beginTime').val();
+            var end = $('#endTime').val();
+            var curDate = '';
+            if(start!=''){
+                curDate = Date.parse(start);
+            }else if(start == '' && end != ''){
+                curDate = Date.parse(end);
+            }else if(start == '' && end == ''){
+                layer.msg('请选择一个时间点！');
+                return false;
+            }
+            var preDate = new Date(curDate - 24*60*60*1000);
+            $('#beginTime').val(getDate(preDate));
+            $('#endTime').val(getDate(preDate));
+            select_data();
+        });
+        $('#after').click(function(){
+            var start = $('#beginTime').val();
+            var end = $('#endTime').val();
+            var curDate = '';
+            if(end!=''){
+                curDate = Date.parse(end);
+            }else if(start != '' && end == ''){
+                curDate = Date.parse(start);
+            }else if(start == '' && end == ''){
+                layer.msg('请选择一个时间点！');
+                return false;
+            }
+            var nextDate = new Date(curDate + 24*60*60*1000);
+            $('#beginTime').val(getDate(nextDate));
+            $('#endTime').val(getDate(nextDate));
+            select_data();
+        });
+        $('.today').click(function () {
+            button_c(this);
+            var date = GetDateStr(0);
+            $('#beginTime').val(date);
+            $('#endTime').val(date);
+            select_data();
+        });
+        // 前一月 前一周
+        $('.next').click(function(){
+            var old_date = $('#m_month_select').val();
+            var new_date = Number(old_date)+1;
+            var l = $('#m_month_select').find('option').length;
+            if(new_date>l){
+                layer.msg('已到达本年最后一条数据！');
+                return false;
+            }
+            $('#m_month_select').val(new_date);
+            select_data();
+        });
+        $('#m_month_select').on('change',function () {
+            select_data();
+        });
+        $('.year_select').on('change',function () {
+            var query_year = $('#year_select').val();
+            $.ajax({
+                type: "GET",
+                url: '__ROOT__/api/bank/query_week_info',
+                data: {
+                    query_year:query_year,
+                },
+                dataType: "json",
+                success: function (result) {
+                    var data = result.data;
+                    var options = '';
+                    if(result.err_code == 0  && data != null) {
+                        var weeks = data.weeks;
+                        for (var i = 0; i < weeks.length; i++) {
+                            if (data.weeks[i].week_index == data.cur_week) {
+                                options = options +'<option data='+data.weeks[i].start_date+','+data.weeks[i].end_date+' value="'+data.weeks[i].week_index+'" selected>第'+data.weeks[i].week_index+'周 ('+data.weeks[i].start_date+' ~ '+data.weeks[i].end_date+')</option>';
+                            }else{
+                                options = options +'<option data='+data.weeks[i].start_date+','+data.weeks[i].end_date+' value="'+data.weeks[i].week_index+'">第'+data.weeks[i].week_index+'周 ('+data.weeks[i].start_date+' ~ '+data.weeks[i].end_date+')</option>';
+                            }
+                        }
+                        //console.log(options);
+                        $('#m_month_select').html(options)
+                    }
+                }
+            })
+        });
+        $('.year_select').trigger('change');
+        function select_data() {
+            layer.load(2);
+            var query_year = $('#year_select').val();
+            var month_week = $('#m_month_select').val();
+            $('#curr_date').val($("#m_month_select").find("option:selected").attr('data'));
+            //图表ajax请求
+            // $.ajax({
+            //     type: "GET",
+            //     url: '__ROOT__/api/bank/query_adjustment_statistics',
+            //     data: {
+            //         query_flag:query_flag,
+            //         query_year:query_year,
+            //         month_week:month_week
+            //     },
+            //     dataType: "json",
+            //     success: function (result) {
+            //         layer.closeAll('loading');
+            //         var data = result.data;
+            //         if(result.err_code == 0  && data != null){
+            //             $('#container').highcharts({
+            //                 title: {
+            //                     text: ''
+            //                 },
+            //                 credits: {
+            //                     enabled: false //不显示LOGO
+            //                 },
+            //                 colors:[
+            //                     '#1DB3A1',
+            //                     '#EE713B'
+            //                 ],
+            //                 xAxis: {
+            //                     categories: data.date_list
+            //                 },
+            //                 yAxis: {
+            //                     title: {
+            //                         text: '量(元)'
+            //                     },
+            //                     labels: {
+            //                         formatter: function () {
+            //                             return this.value;
+            //                         }
+            //                     }
+            //                 },
+            //                 tooltip: {
+            //                     pointFormatter: function(){
+            //                         //console.log(this.series,this.y);
+            //                         return this.series.name +':'+ number_format(this.y,2,'.',',') +'<br>';
+            //                     },
+            //                     valueSuffix: '元',
+            //                     shared: true
+            //                 },
+            //                 plotOptions: {
+            //                     series: {
+            //                     }
+            //                 },
+            //                 labels: {
+            //                     items: [{
+            //                         html: ''
+            //                     }]
+            //                 },
+            //                 series: [{
+            //                     type: 'column',
+            //                     name: '预约交款',
+            //                     data: data.save_list
+            //                 }, {
+            //                     type: 'column',
+            //                     name: '预约取款',
+            //                     data: data.take_list
+            //                 }, {
+            //                     type: 'spline',
+            //                     name: '任务',
+            //                     data: data.task_list,
+            //                     color: Highcharts.getOptions().colors[0],
+            //                     marker: {
+            //                         lineWidth: 2,
+            //                         lineColor: Highcharts.getOptions().colors[4],
+            //                         fillColor: 'white'
+            //                     }
+            //                 }]
+            //             });
+            //         }else{
+            //             layer.msg(result.err_msg);
+            //         }
+            //     },
+            //     error:function(){
+            //         layer.msg('稍后尝试');
+            //         layer.closeAll('loading');
+            //     }
+            // });
+            //报表ajax请求
+            if (query_flag == 1) {
+                var queryType = 2;
+                var strings = $("#m_month_select").find("option:selected").attr('data').split(',');
+                var beginTime = strings[0];
+                var endTime = strings[1];
+            }else if (query_flag == 2) {
+                var queryType = 1;
+                var beginTime = $('#beginTime').val();
+                var endTime = $('#endTime').val();
+            }else if (query_flag == 0) {
+                var queryType = 3;
+                if (month_week < 10) {
+                    var month_week = '0'+month_week;
+                }
+                var beginTime = query_year+'-'+month_week;
+                var endTime = '';    
+            }
+            
+            $.ajax({
+                type: "GET",
+                url: '__ROOT__/api/bank/query_agent_list',
+                data: {
+                    type:1,
+                    inOutType:1,
+                    queryType:queryType,
+                    beginTime:beginTime,
+                    endTime:endTime
+                },
+                dataType: "json",
+                success: function (result) {
+                    layer.closeAll('loading');
+                    var data = result.data;
+                    if(result.success && data != null){
+                        var html_str = '';
+                        for(var i = 0; i < data.length; i++){
+                            html_str = html_str + "<tr>";
+                            html_str = html_str + "<td>"+data[i].name+"</td>";
+                            html_str = html_str + "<td><span class='doVersionOne'>"+data[i].total+"</span></td>";
+                            html_str = html_str + "<td><span class='doVersionOne'>"+data[i].total_100+"</span></td>";
+                            html_str = html_str + "<td><span class='doVersionOne'>"+data[i].total_50+"</span></td>";
+                            html_str = html_str + "<td><span class='doVersionOne'>"+data[i].total_20+"</span></td>";
+                            html_str = html_str + "<td><span class='doVersionOne'>"+data[i].total_10+"</span></td>";
+                            html_str = html_str + "<td><span class='doVersionOne'>"+data[i].total_5+"</span></td>";
+                            html_str = html_str + "<td><span class='doVersionOne'>"+data[i].total_2+"</span></td>";
+                            html_str = html_str + "<td><span class='doVersionOne'>"+data[i].total_1+"</span></td>";
+                            html_str = html_str + "<td><span class='doVersionOne'>"+data[i].total_05+"</span></td>";
+                            html_str = html_str + "<td><span class='doVersionOne'>"+data[i].total_02+"</span></td>";
+                            html_str = html_str + "<td><span class='doVersionOne'>"+data[i].total_01+"</span></td>";
+                            html_str = html_str + "<td><span class='doVersionOne'>"+data[i].total_005+"</span></td>";
+                            html_str = html_str + "<td><span class='doVersionOne'>"+data[i].total_002+"</span></td>";
+                            html_str = html_str + "<td><span class='doVersionOne'>"+data[i].total_001+"</span></td>";
+                            html_str = html_str + '<tr>';
+                        }
+                        if(html_str == ''){
+                            html_str = '<tr><td colspan="15" class="text-center">暂无数据</td></tr>';
+                        }
+                        $('#reportForm').find('tbody').html(html_str);
+                        $("#doConversion").trigger("change");
+                    }else{
+                        layer.msg(result.msg||result.message);
+                    }
+                },
+                error:function(){
+                    layer.msg('稍后尝试');
+                    layer.closeAll('loading');
+                }
+            });
+        }
+        select_data();
+        //元万元亿切换
+        $('#doConversion').change(function(){
+            var thisVal = $(this).val();
+            if (thisVal == 'yi') {
+                var word = '亿';
+                var rate = 100000000;
+            }else if(thisVal == 'w'){
+                var word = '万元';
+                var rate = 10000;
+            }else{
+                var word  = '元';
+                var rate = 1;
+            }
+
+            $('.doVersionOne').each(function(i,e){
+                if (!$(this).attr('number')) {
+                    $(this).attr('number',$(this).text());
+                }
+                var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+                var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+                if (numberOld >= 1) {
+                    var numberNew = number_format(numberOld,2,'.',',') + word;
+                }else{
+                    var numberNew = numberOld + word;
+                }
+                
+                $(this).text(numberNew);                
+            });
+        });
+    });
+</script>
+{/block}

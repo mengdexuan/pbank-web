@@ -1,0 +1,148 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <ul class="layui-tab-title">
+            <li class="layui-this">任务列表</li>
+        </ul>
+        <div class="layui-tab-content">
+            <div class="layui-tab-item layui-show">
+                <blockquote class="layui-elem-quote">
+                    <form class="" id="search" action="">
+                        <div class="layui-form-item" style="margin-bottom: 0">
+                            <div class="layui-inline">
+                                <div class="layui-input-inline" style="height: 38px; line-height: 38px; width: 50px;">
+                                    <input type="radio" name="date" value="today" checked > 今天
+                                </div>
+                                <div class="layui-input-inline" style="height: 38px; line-height: 38px; width: 50px;">
+                                    <input type="radio" name="date" value="yesteday" > 昨天
+                                </div>
+                                <div class="layui-input-inline" style="height: 38px; line-height: 38px; width: 10px;">
+                                    <input type="radio" name="date" value="choice" id="choice" >
+                                </div>
+                                <div class="layui-input-inline">
+                                    <input type="text" name="beginTime" placeholder="选择日期" id="beginTime"  value=""  autocomplete="off" class="layui-input choice_date">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </blockquote>
+                <table class="layui-table" id="data_table">
+                    <thead>
+                    <tr>
+                        <th>执行时间</th>
+                        <th>任务单号</th>
+                        <th>发出行</th>
+                        <th>目的行</th>
+                        <th>金额</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="7" align="center">查询中</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="page_box"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    var cur_date = $('#beginTime').val();
+    var start = {
+        elem:'focus',
+        istoday: true
+        ,choose: function(datas){
+            //console.log($('#beginTime').val());
+
+            $('#beginTime').focus().blur();
+            cur_date = datas;
+        }
+    };
+    function aa(){
+        //$('#choice').attr('checked','checked');
+    }
+    $('#beginTime').blur(function() {
+        console.log(cur_date,$('#beginTime').val());
+        if(cur_date != $('#beginTime').val()){
+            search(1,'choice');
+            $('#choice').attr('checked','checked');
+        }
+
+    });
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+
+    $("input[name='date']").change(function(){
+        search(1,$(this).val());
+    });
+    function search(curr,val){
+        var date_type = val || 'today';
+        var begin_time = $.trim($('#beginTime').val());
+        var end_time = begin_time;
+        if(date_type == 'choice'){
+            if(begin_time == ''){
+                return false;
+            }
+        }
+        layer.load(2);
+        var url = "__ROOT__/api/bank/query_tasks";
+        var op = {
+            cur_page: curr || 1,
+            date_type:date_type,
+            begin_time:begin_time,
+            end_time:end_time
+            //cur_num: 1 //向服务端传的参数，此处只是演示
+        };
+
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var html_str = '';
+            if(result.err_code == 0  && data != null){
+                var tasks = data.tasks;
+                for(var i = 0; i < tasks.length; i++){
+                    html_str = html_str + "<tr>";
+                    html_str = html_str + "<td>"+tasks[i].task_time+"</td>";
+                    html_str = html_str + "<td>"+tasks[i].task_code+"</td>";
+                    html_str = html_str + "<td>"+tasks[i].out_bank_str+"</td>";
+                    html_str = html_str + "<td>"+tasks[i].in_bank_str+"</td>";
+                    html_str = html_str + "<td>"+tasks[i].task_amount_str+"</td>";
+                    html_str = html_str + "<td>"+tasks[i].task_status_str+"</td>";
+                    html_str = html_str + '<td><a href="__ROOT__/admin/query/view_task/task_code/'+tasks[i].task_code+'.html" class="layui-btn layui-btn-normal layui-btn-mini">查看</a></td>';
+                    html_str = html_str + '<tr>';
+                }
+
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = '<tr><td colspan="7" align="center">数据错误：'+result.err_msg+'</td></tr>';
+            }
+
+                $('#data_table').find('tbody').html(html_str);
+                $('#data_table').find('tbody').fadeOut(100);
+                $('#data_table').find('tbody').fadeIn(100);
+
+        });
+    };
+    //运行
+    search();
+</script>
+{/block}

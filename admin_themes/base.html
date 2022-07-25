@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>人民币冠字号码流通管理平台</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="format-detection" content="telephone=no">
+    <link rel="stylesheet" href="__JS__/layui/css/layui.css?t={:config('app_version')}" media="all">
+    <link rel="stylesheet" href="__CSS__/font-awesome.min.css?t={:config('app_version')}">
+    <!--CSS引用-->
+    {block name="css"}{/block}
+    <link rel="stylesheet" href="__CSS__/admin.css?t={:config('app_version')}">
+    <!--[if lt IE 9]>
+    <script src="__CSS__/html5shiv.min.js?t={:config('app_version')}"></script>
+    <script src="__CSS__/respond.min.js?t={:config('app_version')}"></script>
+    <![endif]-->
+</head>
+<body>
+<div class="layui-layout layui-layout-admin">
+    <!--头部-->
+    <!--头部-->
+    <div class="layui-header header">
+        <a href="{:url('admin/index/index')}" class="logo-word"><img src="__IMG__/logo.png"> </a> <span><img src="{$cur_bank['bank_logo']}" class="icon-mini"> {$cur_bank['bank_name']}<small>（{$cur_bank['bank_code']}）</small></span>
+        <div class="user-box">
+            <div class="user">你好，<a href="{:url('admin/change_password/index')}">{:session('admin_name')}</a></div>
+            <div class="exit"><a href="{:url('admin/login/logout')}" id="logout" data-url="{:url('admin/login/logout')}"><i class="icon_exit"></i>退出</a></div>
+        </div>
+    </div>
+    <!--侧边栏-->
+
+    <div class="layui-side layui-bg-gray-l">
+        <div class="layui-side-scroll">
+            <ul class="layui-nav layui-nav-tree">
+                {foreach name="menu" item="vo"}
+                {if condition="isset($vo['children'])"}
+                <li class="layui-nav-item">
+                    <a href="javascript:;"><i class="{$vo.icon}"></i> {$vo.title}</a>
+                    <dl class="layui-nav-child">
+                        {foreach name="vo['children']" item="v"}
+                        <dd><a href="{:url($v.name)}"> {$v.title}</a></dd>
+                        {/foreach}
+                    </dl>
+                </li>
+                {else /}
+                <li class="layui-nav-item">
+                    <a href="{:url($vo.name)}"><i class="{$vo.icon}"></i> {$vo.title}</a>
+                </li>
+                {/if}
+                {/foreach}
+            </ul>
+        </div>
+    </div>
+    <!--主体-->
+    {block name="body"}{/block}
+
+
+</div>
+
+<script>
+    // 定义全局JS变量
+    var GV = {
+        current_controller: "admin/{$controller|default=''}/",
+        current_mothod: "{$mothod|default=''}",
+        base_url: "__STATIC__"
+    };
+</script>
+<!--JS引用-->
+<script src="__JS__/jquery.min.js?t={:config('app_version')}"></script>
+<script src="__JS__/layui/lay/dest/layui.all.js?t={:config('app_version')}"></script>
+<script src="__JS__/admin.js?t={:config('app_version')}"></script>
+{block name="js"}{/block}
+<!--页面JS脚本-->
+{block name="script"}{/block}
+</body>
+</html>

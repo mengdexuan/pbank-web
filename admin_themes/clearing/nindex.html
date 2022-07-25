@@ -1,0 +1,252 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <div class="title-box" style="margin: 10px 0;">
+                <div class="title">清分概览银行列表</div>
+            </div>
+            <div class="info-item" >
+                <div class="today-info" style="margin-bottom: 20px">
+                    <div class="tis">今日清分量</div>
+                    <div class="amount">{$data['work_load']['valid_bundle_cnt']}<span style="font-size: 12px;">(捆)</span><?php if (isset($data['work_load']['valid_handle_cnt']) && $data['work_load']['valid_handle_cnt'] > 0) { ?>+{$data['work_load']['valid_handle_cnt']}<span style="font-size: 12px;">(散把)</span><?php } ?></div>
+                    <div class="num">合计{:number_format($data['work_load']['bundle_amount'],2,'.',',')}</div>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <!--<div class="layui-input-inline w70">
+                    <button type="button" class="layui-btn layui-btn-primary layui-btn-small quick yesterday ">昨天</button>
+                </div>
+                <div class="layui-input-inline w70">
+                    <button type="button" class="layui-btn layui-btn-small quick today">今天</button>
+                </div>-->
+                <div class="layui-input-inline w82">
+                    <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="before">前一天</a>
+                </div>
+                <div class="layui-input-inline date-box">
+                    <input type="text" name="beginTime" placeholder="开始日期" id="beginTime"  value="{$query_date}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                </div>
+                <div class="layui-input-inline wa date-center">-</div>
+                <div class="layui-input-inline date-box">
+                    <input type="text" name="beginTime" placeholder="结束日期" id="endTime"  value="{$query_date}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                </div>
+                <div class="layui-input-inline w82">
+                    <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="after">后一天</a>
+                </div>
+                <div class="layui-input-inline w70">
+                    <button type="button" class="layui-btn layui-btn-small quick search">查询</button>
+                </div>
+                <div class="layui-inline" style="height: 32px;">
+                    <label class="layui-form-label" style="text-align:left;margin-right: -58px;">单位：</label>
+                    <div class="layui-input-inline">
+                        <select class="layui-input" style="cursor: pointer;width: 68px;" id="doConversion">
+                            <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元</option>
+                            <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <table class="new-table" id="data_table">
+                <thead>
+                <tr>
+                    <th>银行名称</th>
+                    <th class="txtR">当日</th>
+                    <th class="texL">清分量(捆)</th>
+                    <th>当日清分量(散把)</th>
+                    <!-- <th>已关联</th> -->
+                    <th>统计时间</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                    <tr class="low">
+                        <td colspan="6" class="text-center">查询中</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div id="page_box"></div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    var _type = 'today';
+    var start = {
+        elem:'focus',
+        istoday: true
+        ,choose: function(datas){
+            $('.layui-input-inline').find('.layui-btn').removeClass('layui-btn-primary').addClass('layui-btn-primary')
+        }
+    };
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    document.getElementById('endTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    $('.today').click(function () {
+        button_c(this);
+        var date = GetDateStr(0);
+        $('#beginTime').val(date);
+        $('#endTime').val(date);
+        search(1);
+    });
+    $('.yesterday').click(function () {
+        button_c(this);
+        var date = GetDateStr(-1);
+        $('#beginTime').val(date);
+        $('#endTime').val(date);
+        search(1);
+    });
+    function getDate (str){
+        var y = str.getFullYear();
+        var m = Number(str.getMonth())+1;
+        if(m.toString().length<2){
+            m = '0'+m;
+        }
+        var d = str.getDate();
+        if(d.toString().length<2){
+            d = '0'+d;
+        }
+        var date = y + '-' + m + '-' + d;
+        return date;
+    }
+    $('#before').click(function(){
+        var start = $('#beginTime').val();
+        var end = $('#endTime').val();
+        var curDate = '';
+        if(start!=''){
+            curDate = Date.parse(start);
+        }else if(start == '' && end != ''){
+            curDate = Date.parse(end);
+        }else if(start == '' && end == ''){
+            layer.msg('请选择一个时间点！');
+            return false;
+        }
+        var preDate = new Date(curDate - 24*60*60*1000);
+        $('#beginTime').val(getDate(preDate));
+        $('#endTime').val(getDate(preDate));
+        search(1);
+    });
+    $('#after').click(function(){
+        var start = $('#beginTime').val();
+        var end = $('#endTime').val();
+        var curDate = '';
+        if(end!=''){
+            curDate = Date.parse(end);
+        }else if(start != '' && end == ''){
+            curDate = Date.parse(start);
+        }else if(start == '' && end == ''){
+            layer.msg('请选择一个时间点！');
+            return false;
+        }
+        var nextDate = new Date(curDate + 24*60*60*1000);
+        $('#beginTime').val(getDate(nextDate));
+        $('#endTime').val(getDate(nextDate));
+        search(1);
+    });
+
+    $('.search').click(function () {
+        button_c(this);
+        search(1);
+    });
+    function button_c(_this) {
+        $('.layui-input-inline').find('.layui-btn').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        $(_this).removeClass('layui-btn-primary');
+    }
+    function search(curr,val){
+        var date_type = val || 'today';
+        var begin_time = $.trim($('#beginTime').val());
+        var end_time = $.trim($('#endTime').val());
+        if(date_type == 'choice'){
+            if(begin_time == ''){
+                return false;
+            }
+        }
+        layer.load(2);
+        var url = "__ROOT__/api/bank/query_work_overview";
+        var op = {
+            cur_page: curr || 1,
+            query_date:begin_time,
+            start_date: begin_time,
+            end_date: end_time
+            //cur_num: 1 //向服务端传的参数，此处只是演示
+        };
+
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var html_str = '';
+            if(result.err_code == 0  && data != null){
+                var work_loads = data.work_loads;
+                for(var i = 0; i < work_loads.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td>"+work_loads[i].bank_str+"</td>";
+                    html_str = html_str + "<td class='txtR doVersionOne'>"+work_loads[i].bundle_amount_str+"</td>";
+                    html_str = html_str + "<td class='texL'>&nbsp;&nbsp;/ "+ work_loads[i].bundle_cnt +"捆</td>";
+                    html_str = html_str + "<td>"+work_loads[i].handle_amount+' / '+work_loads[i].handle_cnt+"把</td>";
+                    // html_str = html_str + "<td>"+work_loads[i].relation_cnt+" 捆</td>";
+                    html_str = html_str + "<td>"+work_loads[i].op_time+"</td>";
+                    html_str = html_str + '<td><a href="__ROOT__/admin/clearing/clearing_info/bank_code/'+work_loads[i].bank+'.html" >查看</a></td>';
+                    html_str = html_str + '</tr>';
+                }
+                if(html_str == ''){
+                    html_str = '<tr><td colspan="6" class="text-center">暂无数据</td></tr>';
+                }
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr,_type);
+                        }
+                    }
+                });
+            }else{
+                html_str = '<tr class="low"><td colspan="5" class="text-center">数据错误：'+result.err_msg+'</td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+            $("#doConversion").trigger("change");
+        });
+    };
+    //运行
+    search();
+    //元万元亿切换
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+
+        $('.doVersionOne').each(function(i,e){
+            if (!$(this).attr('number')) {
+                $(this).attr('number',$(this).text());
+            }
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+            
+            $(this).text(numberNew);                
+        });
+    });
+</script>
+{/block}

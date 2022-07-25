@@ -1,0 +1,80 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <ul class="layui-tab-title">
+            <li class="layui-this">修改任务</li>
+        </ul>
+        <div class="layui-tab-content">
+            <div class="layui-tab-item layui-show">
+                <form class="layui-form form-container" action="{:url('/api/bank/modify_task')}" method="post">
+                    <input type="hidden" name="task_code" value="{$data['task_code']}">
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">时间</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="task_time" value="{$data['task_time']}" required lay-verify="date" placeholder="请选择任务时间" id="LAY_demorange_s" class="laydate-icon layui-input" style="height: 38px;line-height: 38px;">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">调出行</label>
+                        <div class="layui-input-block">
+                            <select name="out_bank" lay-verify="required">
+                                <option value="">请选择调出行</option>
+                                {foreach name="banks" item="vo" }
+
+                                <option value="{$key}" {if $key == $data['out_bank']} selected{/if}>{$vo}</option>
+
+                                {/foreach}
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">调入行</label>
+                        <div class="layui-input-block">
+                            <select name="in_bank" lay-verify="required">
+                                <option value="">请选择调入行</option>
+                                {foreach name="banks" item="vo" }
+                                {if $key != $cur_bank}
+                                <option value="{$key}" {if $key == $data['in_bank']} selected{/if}>{$vo}</option>
+                                {/if}
+                                {/foreach}
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">金额</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="task_amount" lay-verify="required" placeholder="请输入金额" value="{$data['amount_wan']}" autocomplete="off" class="layui-input">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux">万</div>
+                    </div>
+                    <div class="layui-form-item">
+                        <div class="layui-input-block">
+                            <button class="layui-btn" lay-submit lay-filter="interface">修改</button>
+                            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    var start = {
+        min: laydate.now()
+        ,max: '2099-06-16 23:59:59'
+        ,istoday: false
+        ,choose: function(datas){
+        }
+    };
+    document.getElementById('LAY_demorange_s').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    }
+</script>
+{/block}

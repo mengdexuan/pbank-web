@@ -1,0 +1,811 @@
+{extend name="base" /}
+{block name="css"}
+{/block}
+{block name="body"}
+<style>
+    .hideLineBox {
+        display: inline-block;
+        height: 32px;
+        line-height: 32px;
+        margin-left: 20px;
+        cursor: pointer;
+    }
+    #hideLine {
+        width: 16px;
+        height: 16px;
+        float: left;
+        margin: 8px 3px;
+    }
+    .layui-input, .layui-textarea{
+        width: 90%;
+    }
+    .amount-table {
+        width: 400px;
+        margin: 0 auto;
+        margin-bottom: 20px;
+    }
+    .amount-table thead,
+    .amount-table tfoot{
+        display: block;
+        width: 400px;
+    }
+    .amount-table tbody {
+        height: 172px;
+        overflow-y:scroll;
+        display:block
+    }
+    .amount-table th,
+    .amount-table tr {
+        text-align: center !important;
+    }
+    .td1{
+        width:200px;
+        min-width:200px;
+        max-width:200px;
+    }
+    .td3{
+        width:200px;
+        min-width:200px;
+        max-width:200px;
+    }
+    .amount-input {
+        width: 200px;
+        height: 20px;
+    }
+    .valuta_amount {
+        color: green;
+        font-weight: bold;
+    }
+    .input-box {
+        display: inline-block;
+        height: 38px;
+        line-height: 38px;
+        margin-right: 20px;
+    }
+    .input-box input {
+        width: 18px;
+        height: 18px;
+        float: left;
+        margin: 9px 3px 0 0
+    }
+    .layui-table thead tr:not(first-child) {
+        background-color: #fff;
+    }
+    .none {
+        display: none;
+    }
+    .del-damaged {
+        cursor: pointer;
+    }
+    /* tongji */
+    .report thead th,
+    .report tbody td,
+    .report tfoot td {
+        border: 1px solid #000 !important;
+    }
+    .report thead tr,
+    .report tfoot {
+        background: #eee !important;
+    }
+    .layui-table th {
+        padding: 5x;
+        min-height: 20px;
+        line-height: 20px;
+        border: 1px solid #e2e2e2;
+        font-size: 14px;
+        text-align: center
+    }
+    .report tbody td,
+    .report tfoot td {
+        padding: 5px;
+        text-align: right;
+    }
+    .report tfoot td.c {
+        text-align: center;
+        font-weight: bold;
+    }
+    .wzq {
+        background: #ffd9d9 !important;
+    }
+    .csq {
+        background: #d2eabc !important;
+    }
+    .qk {
+        background: #d9eaff !important;
+    }
+    caption {
+        font-size: 18px;
+        margin: 0 0 10px 0;
+        font-weight: bold;
+    }
+    caption.t-tip {
+        text-align: right;
+        font-size: 12px;
+        color: #777;
+    }
+</style>
+<div class="layui-body">
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <span class="layui-breadcrumb">
+                {if $is_lib == 1}
+                <a href="{:url('admin/library/damaged')}">残损券库存</a>
+                {else}
+                <a href="{:url('admin/damaged/index',['query_date'=>$stock_time])}">上交残损券</a>
+                {/if}
+                <a><cite>详情</cite></a>
+                </span>
+            <div class="layui-form-item" style="margin: 20px 0">
+                上报银行：{:getBankNameByCode($bank_code)}
+            </div>
+            <div class="layui-form-item" style="margin: 20px 0">
+                上交日期：<span class="time">{$stock_date}</span> {$stock_time}
+            </div>
+            <div class="layui-form-item" style="margin: 20px 0">
+                上报时间：{$last_time}
+                <div class="hideLineBox" style="display:inline-block;margin-left:30px;">
+                    <input type="checkbox" name="hideLineBtn" id="hideLine" checked="checked">
+                    <label for="hideLine">隐藏空行</label>
+                </div>
+            </div>
+            <div class="layui-inline" style="height: 32px;">
+                <label class="layui-form-label" style="text-align:left;margin-right: -58px;">单位：</label>
+                <div class="layui-input-inline">
+                    <select class="layui-input" style="cursor: pointer;width: 68px;" id="doConversion">
+                        <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元</option>
+                        <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元</option>
+                    </select>
+                </div>
+            </div>
+            <input type="hidden" id="stock_status" value="{$stock_status}">
+            <input type="hidden" id="task_status" value="{$task_status}">
+            <table class="new-table" style="width: 600px">
+                <thead>
+                <tr>
+                    <th>版别</th>
+                    <th>预约残损券金额</th>
+                    {if $stock_status == 1}
+                        <th>审批残损券金额</th>
+                        {if $task_status==1 || $task_status==2}
+                        <th>实际残损券入库金额</th>
+                        {/if}
+                    {/if}
+                    <th style="width:0;margin: 0;padding: 0"></th>
+                </tr>
+                </thead>
+                <tbody>
+                {volist name="valuta_info" id="vo"}
+                <tr class="low low-sum">
+                    <td>
+                        {$vo['valuta_name']}
+                        <input type="hidden" name="valuta_value[{$vo['valuta_code']}]" value="{$vo['valuta_value']}">
+                    </td>
+                    <td class="doVersionOne">{if isset($vo['amount']) && $vo['amount'] != 0}{:number_format($vo['amount'],2,'.',',')}{else}--{/if}</td>
+                    {if $stock_status == 1}
+                    <td class="doVersionOne">{if isset($vo['approve_amount']) && $vo['approve_amount'] != 0}{:number_format($vo['approve_amount'],2,'.',',')}{else}--{/if}</td>
+                    {if $task_status==1 || $task_status==2}
+                    <td class="doVersionOne" {if isset($vo['approve_amount']) && isset($vo['task_amount']) && $vo['approve_amount']!=$vo['task_amount']}class="red"{/if}>{if isset($vo['task_amount']) && $vo['task_amount'] != 0}{:number_format($vo['task_amount'],2,'.',',')}{else}--{/if}</td>
+                    {/if}
+                    {/if}
+                    <td></td>
+                </tr>
+                {/volist}
+                <tr class="low">
+                    <td>小计</td>
+                    <td class="doVersionOne">{if isset($stock_info['amount'])}{:number_format($stock_info['amount'],2,'.',',')}{else}0{/if}</td>
+                    {if $stock_status == 1}
+                    <td class="doVersionOne">{if isset($stock_info['approve_amount'])}{:number_format($stock_info['approve_amount'],2,'.',',')}{else}0{/if}</td>
+                    {if $task_status==1 || $task_status==2}
+                    <td class="doVersionOne" {if isset($stock_info['approve_amount']) && isset($stock_info['task_amount']) && $stock_info['approve_amount']!=$stock_info['task_amount']}class="red"{/if}>{if isset($stock_info['task_amount'])}{:number_format($stock_info['task_amount'],2,'.',',')}{else}0{/if}</td>
+                    {/if}
+                    {/if}
+                    <td></td>
+                </tr>
+                <tr class="low">
+                    <td  >备注</td>
+                    <td>
+                        <div style="max-width:450px;word-wrap:break-word">{$note}</div>
+                    </td>
+                    {if $stock_status == 1}
+                    <td></td>
+                    {/if}
+                    <td></td>
+                </tr>
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+    <span style="display:none;">{$stock_status}</span>
+    {if (strtotime($stock_time)+3600*24) > time() }
+        {if $stock_status == 0}
+        <a href="javascript:;" class="layui-btn del-damaged" data="{$bank_code}" date="{$stock_date}"  data-id="{$stock_id}">审核</a>
+        {elseif $stock_status == 1}
+            {if $task_status == 0}<a class="layui-btn layui-btn-primary cancel" href="{:url('api/bank/cancel_approve_damage_stock')}" data-id="{$stock_id}">取消审批</a>{/if}
+            {if $task_status == 1}<a href="javascript:;" class="layui-btn inroom" data="{$bank_code}" date="{$stock_date}"  data-id="{$stock_id}">入库</a>{/if}
+            {if $task_status == 2}{/if}
+        {/if}
+    {/if}
+
+</div>
+<!--审批-->
+<div id="save_dialog" style="display: none">
+    <form class="form-container" action="{:url('/api/bank/approve_damage_stock')}" method="post">
+        <input type="hidden" name="bank_code" value="">
+        <input type="hidden" name="op_name" id="op_name" value="{$op_name}">
+        <input type="hidden" name="stock_id" class="stock_id" value="">
+        <div class="layui-form-item"  style="margin-top: 20px;">
+            <label class="layui-form-label">预约时间</label>
+            <div class="layui-input-inline">
+                <input type="text" name="stock_date" value="" required lay-verify="date" placeholder="请选择预约时间" id="LAY_demorange_s" class="laydate-icon layui-input plan_time" style="height: 38px;line-height: 38px;">
+            </div>
+            <select name="hour" class="hour" style="min-width:30px;height:36px;line-height:36px;margin-right:0">
+                <option value="08">08</option>
+                <option value="09">09</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+                <option value="16">16</option>
+                <option value="17">17</option>
+                <option value="18">18</option>
+            </select>
+            时
+            <select name="minute" class="minute" style="min-width:30px;height:36px;line-height:36px;margin-right:0">
+                <option value="00">00</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+                <option value="40">40</option>
+                <option value="50">50</option>
+            </select>
+            分
+        </div>
+
+        <table class="layui-table amount-table">
+            <thead>
+            <tr>
+                <th class="td1">版别</th>
+                <th class="td3">库存残损券(元)</th>
+            </tr>
+            </thead>
+            <tbody>
+            {volist name="valuta_info" id="vo"}
+            <tr class="low">
+                <td class="td1">
+                    {$vo['valuta_name']}
+                    <input type="hidden" name="valuta_value[{$vo['valuta_code']}]" value="{$vo['valuta_value']}">
+                </td>
+                <td class="td3 po-r">
+                    <input onblur="checkNumIsMul(this)" name="amount[{$vo['valuta_code']}]" value="" type="text" class="amount-input amount-input-hastip"  data-code="{$vo['valuta_code']}" data-value="{$vo['valuta_value']}" min="0">
+                </td>
+            </tr>
+            {/volist}
+            </tbody>
+            <tfoot>
+            <tr>
+                <td class="td1">总计</td>
+                <td class="total td3">
+                    <span class="valuta_amount"></span>
+                </td>
+            </tr>
+            </tfoot>
+        </table>
+        <div class="layui-form-item">
+            <label class="layui-form-label">备注</label>
+            <div class="layui-input-inline">
+                <textarea name="note" id="note" placeholder="请输入内容" class="layui-textarea" style="width: 370px; min-height: 60px;"></textarea>
+            </div>
+        </div>
+        <input type="hidden" name="bank_flag" value="pbc">
+        <button class="layui-btn none" lay-submit="" lay-filter="*" id="damaged-btn"  data="">提交</button>
+    </form>
+</div>
+<!--入库-->
+<div id="inroom_dialog" style="display: none">
+    <form class="form-container" action="{:url('/api/bank/damage_in_room')}" method="post">
+        <input type="hidden" name="bank_code" value="">
+        <input type="hidden" name="inroom_stock_id" class="stock_id" value="">
+        <div class="layui-form-item"  style="margin-top: 20px;">
+            <label class="layui-form-label">预约时间</label>
+            <div class="layui-input-inline">
+                <input type="text" name="stock_date" value="" required lay-verify="date" placeholder="请选择预约时间" id="" class="laydate-icon layui-input plan_time" style="height: 38px;line-height: 38px;" readonly>
+            </div>
+            <input type="text" name="hour" class="hour" style="width:38px;height:32px;line-height:32px;margin-right:0;text-align:center;" readonly>
+            时
+            <input type="text" name="minute" class="minute" style="width:38px;height:32px;line-height:32px;margin-right:0;text-align:center;" readonly>
+            分
+        </div>
+
+        <table class="layui-table amount-table">
+            <thead>
+            <tr>
+                <th class="td1">版别</th>
+                <th class="td3">库存残损券(元)</th>
+            </tr>
+            </thead>
+            <tbody>
+            {volist name="valuta_info" id="vo"}
+            <tr class="low">
+                <td class="td1">
+                    {$vo['valuta_name']}
+                    <input type="hidden" name="valuta_value[{$vo['valuta_code']}]" value="{$vo['valuta_value']}">
+                </td>
+                <td class="td3 po-r">
+                    <input onblur="checkNumIsMul(this)" name="amount[{$vo['valuta_code']}]" value="" type="text" class="amount-input2 amount-input-hastip" data-code="{$vo['valuta_code']}" data-value="{$vo['valuta_value']}" min="0">
+                </td>
+            </tr>
+            {/volist}
+            </tbody>
+            <tfoot>
+            <tr>
+                <td class="td1">总计</td>
+                <td class="total td3">
+                    <span class="valuta_amount2"></span>
+                </td>
+            </tr>
+            </tfoot>
+        </table>
+        <div class="layui-form-item">
+            <label class="layui-form-label">备注</label>
+            <div class="layui-input-inline">
+                <textarea name="note" id="note2" placeholder="请输入内容" class="layui-textarea" style="width: 370px; min-height: 60px;" readonly></textarea>
+            </div>
+        </div>
+        <input type="hidden" name="bank_flag" value="pbc">
+        <button class="layui-btn none" lay-submit="" lay-filter="*" id="inroom-btn"  data="">提交</button>
+    </form>
+</div>
+{/block}
+{block name="script"}
+<script>
+    $(function(){
+        var query_date = $('.time').html();
+        function resetform(){
+            $('.new-plan-code').val('');
+            $('.new_plan_type').val('');
+            $('.new_plan_time').val('');
+            $("input[name='plan_type']").each(function() {
+                $(this).removeAttr('disabled','disabled')
+                $(this).removeAttr('checked')
+                if ($(this).val() == 0) {
+                    $(this).prop("checked", "checked");
+                    $(this).attr('checked',true)
+                }
+            });
+            $('.plan_time').val('').removeAttr('disabled');
+            $('.amount-input').each(function(){
+                $(this).val('')
+            });
+            $('.valuta_amount').val('').html('');
+            $('#note').val('').html('');
+        }
+        form.on('submit(*)', function(data){
+            console.log($(data.form).serialize())
+            $.ajax({
+                url: data.form.action,
+                type: data.form.method,
+                data: $(data.form).serialize(),
+                success: function (info) {
+                    if (info.err_code == 0) {
+                        setTimeout(function () {
+                            location.reload();
+                        }, 1000);
+                        info.err_msg = '提交成功';
+                    }
+                    console.log(info);
+                    layer.msg(info.err_msg);
+                }
+            });
+            return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+        });
+        $('.exam').click(function () {
+            var bank_code = $(this).attr('data');
+            $('input[name="bank_code"]').val(bank_code);
+            var query_date = $('.time').html();
+            var data_id = $(this).attr('data-id');
+            console.log(bank_code);
+            console.log(query_date);
+            $.ajax({
+                url: '__ROOT__/api/bank/query_damage_stock',
+                data:{
+                    bank_code:bank_code,
+                    query_date:query_date
+                },
+                type: "post",
+                data_type:'json',
+                success: function (info) {
+                    console.log(info);
+                    if (info.err_code == 0) {
+                        var data = info.data.stock_info;
+                        var stock_date = data.stock_date;
+                        var stock_time = data.stock_time;
+                        var hour = stock_time.split(':')[0];
+                        var minute = stock_time.split(':')[1];
+                        var stock_id = data.stock_id;
+                        var amount = data.amount;
+                        var stock_details = data.stock_details;
+                        var note = data.note;
+
+                        $('.plan_time').val(stock_date).attr('readonly','readonly')
+                        $('.stock_id').val(stock_id);
+                        $('.new-plan-time').val(stock_date);
+                        $(".hour").val(hour);
+                        $(".minute").val(minute);
+                        $('.valuta_amount').html(amount/10000);
+                        $('#note').val(note).html(note);
+                        $('#damaged-btn').attr('data',data_id);
+                        for(var i = 0; i < stock_details.length; i++){
+                            var c = stock_details[i].valuta_code;
+                            var m = stock_details[i].amount;
+                            $('.amount-input').each(function(){
+                                if($(this).attr('data-code') == c ){
+                                    $(this).val(m/10000)
+                                }
+                            })
+                        }
+                    }else {
+                        layer.msg(info.err_msg);
+                    }
+                }
+            });
+            layer.open({
+                type: 1,
+                area: ['520px', '530px'],
+                title:'上交残损券',
+                content: $('#save_dialog'),
+                btn: ['确定', '取消'],
+                yes: function(index, layero){
+                    $('#damaged-btn').click();
+                }
+                ,btn2: function(index, layero){
+                    $('#save_dialog').hide();
+                    resetform()
+                }
+                ,cancel: function(){
+                    $('#save_dialog').hide();
+                    resetform()
+                }
+            });
+        });
+        $('.cancel').on('click', function () {
+            var _href = $(this).attr('href');
+            var stock_id = $(this).attr('data-id');
+            layer.open({
+                shade: 0.3,
+                content: '确定取消审核？',
+                btn: ['确定', '取消'],
+                yes: function (index) {
+                    $.ajax({
+                        url: _href,
+                        data:{stock_id:stock_id,query_date:query_date},
+                        type: "post",
+                        success: function (info) {
+                            if (info.err_code === 0) {
+                                setTimeout(function () {
+                                    location.href = info.url;
+                                    //location.reload();
+                                }, 1000);
+                                info.err_msg = '取消审核成功';
+                            }
+                            layer.msg(info.err_msg);
+                        }
+                    });
+                    layer.close(index);
+                }
+            });
+            return false;
+        });
+        function resetform(){
+            $('#inroom_dialog').hide();
+            $('.new-plan-code').val('');
+            $('.new_plan_type').val('');
+            $('.new_plan_time').val('');
+            $("input[name='plan_type']").each(function() {
+                $(this).removeAttr('disabled','disabled')
+                $(this).removeAttr('checked')
+                if ($(this).val() == 0) {
+                    $(this).prop("checked", "checked");
+                    $(this).attr('checked',true)
+                }
+            });
+            $('.plan_time').val('').removeAttr('disabled');
+            $('.amount-input').each(function(){
+                $(this).val('')
+            });
+            $('.valuta_amount').val('').html('');
+            $('#note').val('').html('');
+            $('#note2').val('').html('');
+        }
+        form.on('submit(*)', function(data){
+            console.log($(data.form).serialize())
+            $.ajax({
+                url: data.form.action,
+                type: data.form.method,
+                data: $(data.form).serialize(),
+                success: function (info) {
+                    if (info.err_code == 0) {
+                        setTimeout(function () {
+                            location.reload();
+                        }, 1000);
+                        info.err_msg = '提交成功';
+                    }
+                    console.log(info);
+                    layer.msg(info.err_msg);
+                }
+            });
+            return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+        });
+
+        /*审批*/
+        $('.del-damaged').click(function () {
+            var bank_code = $(this).attr('data');
+            $('input[name="bank_code"]').val(bank_code);
+            var query_date = $(this).attr('date');
+            var data_id = $(this).attr('data-id')
+            $.ajax({
+                url: '__ROOT__/api/bank/query_damage_stock',
+                data:{
+                    bank_code:bank_code,
+                    query_date:query_date
+                },
+                type: "post",
+                data_type:'json',
+                success: function (info) {
+                    console.log(info);
+                    if (info.err_code == 0) {
+                        var data = info.data.stock_info;
+                        var stock_date = data.stock_date;
+                        var stock_time = data.stock_time;
+                        var hour = stock_time.split(':')[0];
+                        var minute = stock_time.split(':')[1];
+                        var stock_id = data.stock_id;
+                        var amount = data.amount;
+                        var stock_details = data.stock_details;
+                        var note = data.note;
+                        $('.plan_time').val(stock_date).attr('readonly','readonly')
+                        $('.stock_id').val(stock_id);
+                        $('.new-plan-time').val(stock_date);
+                        $(".hour").val(hour);
+                        $(".minute").val(minute);
+                        $('.valuta_amount').attr('data',amount);
+                        $('.valuta_amount').html(number_format(amount,2,'.',','));
+                        $('#note').val(note).html(note);
+                        $('#damaged-btn').attr('data',data_id);
+                        for(var i = 0; i < stock_details.length; i++){
+                            var c = stock_details[i].valuta_code;
+                            var m = stock_details[i].amount;
+                            $('.amount-input').each(function(){
+                                if($(this).attr('data-code') == c ){
+                                    $(this).val(m)
+                                }
+                            })
+                        }
+                    }else {
+                        layer.msg(info.err_msg);
+                    }
+                }
+            });
+            layer.open({
+                type: 1,
+                area: ['520px', '530px'],
+                title:'上交残损券',
+                content: $('#save_dialog'),
+                btn: ['确定', '取消'],
+                yes: function(index, layero){
+                    $('#damaged-btn').click();
+                }
+                ,btn2: function(index, layero){
+                    $('#save_dialog').hide();
+                    resetform()
+                }
+                ,cancel: function(){
+                    $('#save_dialog').hide();
+                    resetform()
+                }
+            });
+        });
+        //计算总金额
+        function setTotalAmount(){
+            var a = 0
+            $('.amount-input').each(function(){
+                if(Number($(this).val()) != '' && Number($(this).val()) < 0 ){
+                    layer.msg('请正确填写金额');
+                    return false;
+                }
+                a += Number($(this).val());
+            })
+            $('.valuta_amount').attr('data',a);
+            $('.valuta_amount').html(number_format(a,2,'.',','))
+        }
+        $('.amount-input').bind('input propertychange', function() {
+            setTotalAmount();
+        });
+        $(".amount-input").blur(function(){
+            setTotalAmount();
+        });
+        $(".amount-input").on('keypress',function(){
+            setTotalAmount();
+        })
+
+
+        $('.inroom').click(function () {
+            var bank_code = $(this).attr('data');
+            $('input[name="bank_code"]').val(bank_code);
+            var query_date = $(this).attr('date');
+            var data_id = $(this).attr('data-id')
+            $.ajax({
+                url: '__ROOT__/api/bank/query_damage_stock',
+                data:{
+                    bank_code:bank_code,
+                    query_date:query_date
+                },
+                type: "post",
+                data_type:'json',
+                success: function (info) {
+                    console.log(info);
+                    if (info.err_code == 0) {
+                        var data = info.data.stock_info;
+                        var stock_date = data.stock_date;
+                        var stock_time = data.stock_time;
+                        var hour = stock_time.split(':')[0];
+                        var minute = stock_time.split(':')[1];
+                        var stock_id = data.stock_id;
+                        var task_amount = data.task_amount;
+                        var stock_details = data.stock_details;
+                        var note = data.note;
+                        $('.plan_time').val(stock_date).attr('readonly','readonly')
+                        $('.stock_id').val(stock_id);
+                        $('.new-plan-time').val(stock_date);
+                        $(".hour").val(hour);
+                        $(".minute").val(minute);
+                        $('.valuta_amount2').attr('data',data.approve_amount);
+                        $('.valuta_amount2').html(number_format(data.approve_amount,2,'.',','));
+                        $('#note2').val(note).html(note);
+                        $('#inroom-btn').attr('data',data_id);
+                        for(var i = 0; i < stock_details.length; i++){
+                            var c = stock_details[i].valuta_code;
+                            var m = stock_details[i].task_amount;
+                            $('.amount-input2').each(function(){
+                                if($(this).attr('data-code') == c ){
+                                    $(this).val(m)
+                                }
+                            })
+                        }
+                    }else {
+                        layer.msg(info.err_msg);
+                    }
+                }
+            });
+            layer.open({
+                type: 1,
+                area: ['520px', '530px'],
+                title:'上交残损券',
+                content: $('#inroom_dialog'),
+                btn: ['确定', '取消'],
+                yes: function(index, layero){
+                    $('#inroom-btn').click();
+                }
+                ,btn2: function(index, layero){
+                    $('#inroom-btn').hide();
+                    resetform()
+                }
+                ,cancel: function(){
+                    $('#inroom-btn').hide();
+                    resetform()
+                }
+            });
+        });
+        //计算总金额
+        function setTotalAmount2(){
+            var a = 0
+            $('.amount-input2').each(function(){
+                if(Number($(this).val()) != '' && Number($(this).val()) < 0 ){
+                    layer.msg('请正确填写金额');
+                    return false;
+                }
+                a += Number($(this).val());
+            })
+            $('.valuta_amount2').attr('data',a);
+            $('.valuta_amount2').html(number_format(a,2,'.',','));
+        }
+        $('.amount-input2').bind('input propertychange', function() {
+            setTotalAmount2();
+        });
+        $(".amount-input2").blur(function(){
+            setTotalAmount2();
+        });
+        $(".amount-input2").on('keypress',function(){
+            setTotalAmount2();
+        });
+
+
+
+
+        var stock_status = $('#stock_status').val();
+        var task_status = $('#task_status').val();
+        // 隐藏空行
+        function hideLine(){
+            if($('#hideLine').is(':checked')){
+                $('.low-sum').each(function(){
+                    var hide1 = true;
+                    var hide2 = true;
+                    var hide3 = true;
+                    var w1 = $(this).find('td').eq(1).html();
+                    if(w1 != '--'){
+                        hide1 = false;
+                    }
+                    if(stock_status == 1){
+                        var w2 = $(this).find('td').eq(2).html();
+                        if(w2 != '--'){
+                            hide2 = false;
+                        }
+                        if(task_status == 1 || task_status == 2){
+                            var w3 = $(this).find('td').eq(3).html();
+                            if(w3 != '--'){
+                                hide3 = false;
+                            }
+                        }
+                    }
+                    //console.log(w1)
+                    if( hide1  && hide2  && hide3 ){
+                        $(this).hide();
+                    }
+                })
+            }else{
+                $('.low-sum').each(function(){
+                    $(this).show();
+                })
+            }
+        }
+        hideLine();
+        $('#hideLine').click(function(){
+            hideLine();
+        })
+    });
+    //元万元亿切换
+    $('.doVersionOne').last().attr('number',$('.doVersionOne').last().text());
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+        
+        $('.doVersionOne').each(function(i,e){
+            if (!$(this).attr('number')) {
+                $(this).attr('number',$(this).text());
+            }
+            var numberOld = $.trim($('.doVersionOne').last().attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+            
+            $('.doVersionOne').last().text(numberNew);   
+            if ($(this).attr('number') != '--') {
+                var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+                var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+                if (numberOld >= 1) {
+                    var numberNew = number_format(numberOld,2,'.',',') + word;
+                }else{
+                    var numberNew = numberOld + word;
+                }
+                
+                $(this).text(numberNew);      
+            }
+        });
+    });
+    $("#doConversion").trigger("change");
+</script>
+{/block}

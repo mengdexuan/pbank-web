@@ -1,0 +1,257 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <form class="" id="search" action="">
+                <div class="layui-form-item">
+                    <div style="display:inline-block;float:left;">
+                        <div class="layui-input-inline wa date-center">银行名称:</div>
+                        <div class="layui-input-inline wa">
+                            <select name="bankName" id="" class="new-select">
+                                <option value="">请选择商行</option>
+                                {volist name="$banks" id="vo"}
+                                <option data="{$vo.bank_code}" value="{$vo.bank_net_code}" {if $vo.bank_net_code==$bankCode}selected{/if}>{$vo.bank_name}</option>
+                                {/volist}
+                            </select>
+                        </div>
+                        <div class="layui-input-inline wa mr20">
+                            <select name="sonBankName" id="" class="new-select">
+                                <option value="">全部</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display:inline-block;float:left;">
+
+                        <div class="layui-input-inline wa date-center">业务时间:</div>
+                        <div class="layui-input-inline date-box">
+                            <input type="text" name="beginTime" placeholder="选择开始日期" id="beginTime"  value="{$start_time}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                        </div>
+                        <div class="layui-input-inline wa date-center">-</div>
+                        <div class="layui-input-inline date-box mr20">
+                            <input type="text" name="beginTime" placeholder="选择结束日期" id="endTime"  value="{$end_time}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                        </div>
+                    </div>
+                    <div class="layui-inline" style="height: 32px;">
+                        <label class="layui-form-label" style="text-align:left;margin-right: -58px;">单位：</label>
+                        <div class="layui-input-inline">
+                            <select class="layui-input" style="cursor: pointer;width: 68px;" id="doConversion">
+                                <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元</option>
+                                <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-input-inline" style="width: 152px;float: right;">
+                        <button type="button" class="layui-btn layui-btn-small search">查询</button>
+                        <button type="button" class="layui-btn layui-btn-primary layui-btn-small reset">重置</button>
+                    </div>
+                </div>
+            </form>
+            <div class="m-10-0" id="bank_name_show"></div>
+            <!-- <div class="m-10-0">支出总金额：<span id="bankOutTotal">0</span></div> -->
+            <div class="m-10-0">支出总金额：<span class="bankOutTotal doVersionOne">0</span>&nbsp;&nbsp;&nbsp;&nbsp;坐支金额：<span class="bankInAndOut doVersionOne">0</span>&nbsp;&nbsp;&nbsp;&nbsp;占比<span class="per">0</span>%</div>
+            <table class="new-table" id="data_table">
+                <thead>
+                <tr>
+                    <th>网点名称</th>
+                    <th class='txtR'>总支出金额</th>
+                    <th class='txtR'>坐支金额</th>
+                    <th class='txtR'>占比</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <div id="page_box"></div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    /*重置功能*/
+    $('.reset').click(function(){
+        $('select[name="bankName"]').val('');
+        $('select[name="sonBankName"]').val('');
+        $('#beginTime').val('');
+        $('#endTime').val('');
+    });
+    /*设置日期*/
+    var _type = 'today';
+    var start = {
+        elem:'focus',
+        istoday: true
+        ,choose: function(datas){
+            $('.layui-input-inline').find('.quick').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        }
+    };
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    document.getElementById('endTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+
+    /*获取网点*/
+    function get_branch(){
+        var bank_code = $('select[name="bankName"]').find("option:selected").attr('data');
+        var bank_name = $('select[name="bankName"]').find("option:selected").text();
+        $('#bank_name_show').html(bank_name);
+        if(bank_code == ''){
+            return false;
+        }
+        var url = "__ROOT__/api/bank/query_bank_branch";
+        var op = {bank_code:bank_code};
+        data_page(url,op,function(result){
+            var data = result.data;
+            var branchs = data.branchs;
+            if(result.err_code == 0){
+                $('select[name="sonBankName"]').html('');
+                html = '<option value="">全部</option>';
+                for(var i = 0; i < branchs.length; i++){
+                    html += '<option value="'+branchs[i].branch_code+'">'+branchs[i].branch_name+'</option>'
+                }
+                $('select[name="sonBankName"]').html(html);
+            }else{
+                layer.msg('请求商业银行网点信息失败，请刷新页面后重试！')
+            }
+        });
+    }
+    get_branch();
+    $('select[name="bankName"]').click(function(){
+        get_branch();
+    });
+    $('select[name="sonBankName"]').click(function(){
+        var branch_code = $('select[name="sonBankName"]').val();
+        var branch_name = $('select[name="sonBankName"]').find("option:selected").text();
+        if(branch_code != ''){
+            $('#bank_name_show').html(branch_name);
+        }
+    });
+
+    /*列表获取*/
+    function search(curr){
+        var bankCode = $('select[name="bankName"]').val();
+        var branchBankCode = $('select[name="sonBankName"]').val();
+        var startTime = $('#beginTime').val();
+        var endTime = $('#endTime').val();
+        if(get_time(startTime) >get_time(endTime)){
+            layer.msg('开始时间不能大于结束时间');
+            return false;
+        }
+        if(bankCode == ''){
+            layer.msg('请选择商行！');
+            return false;
+        }
+        if(startTime == ''){
+            layer.msg('请选择开始时间！');
+            return false;
+        }
+        if(endTime == ''){
+            layer.msg('请选择结束时间！');
+            return false;
+        }
+        bankCode += '';
+        branchBankCode += '';
+        var startTimeNew = startTime + ' 00:00:00';
+        var endTimeNew = endTime + ' 23:59:59';
+        layer.load(2);
+        var url = "__ROOT__/api/inout/branch_bank_data";
+        var op = {
+            bankCode: bankCode,
+            branchBankCode: branchBankCode,
+            startTime: startTimeNew,
+            endTime: endTimeNew,
+            page: curr || 1,
+            limit: 20
+        };
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            $('.bankOutTotal').html(data.bankOutTotal);
+            $('.bankInAndOut').html(data.bankInAndOut);
+            $('.per').html(data.per);
+            if(result.errorCode == 0  && data != null){
+                var list = data.list;
+                $('#bankOutTotal').html(number_format(data.bankOutTotal,2,'.',','));
+            }else{
+                $('#bankOutTotal').html(0);
+            }
+            var html_str = '';
+            if(result.errorCode == 0  && list != null){
+                for(var i = 0; i < list.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td data='"+list[i].branchBankCode+"'>"+list[i].branchBankName+"</td>";
+                    html_str = html_str + "<td class='txtR doVersionOne'>"+list[i].branchBankOutTotal_str+"</td>";
+                    html_str = html_str + "<td class='txtR doVersionOne'>"+list[i].inOutTotal_str+"</td>";
+                    html_str = html_str + "<td class='txtR'>"+list[i].per+"%</td>";
+                    html_str = html_str + "<td><a href='__ROOT__/admin/dot_cash/index/bankCode/"+bankCode+"/branchBankCode/"+list[i].branchBankCode+"/startTime/"+startTime+"/endTime/"+endTime+".html'>查看</a></td>";
+                    html_str = html_str + '</tr>';
+                }
+                if(html_str == ''){
+                    html_str = '<tr class="low"><td colspan="5" class="text-center">暂无数据</td></tr>';
+                }
+                laypage({
+                    cont: 'page_box',
+                    pages: data.totalPage,
+                    curr: curr || 1,
+                    jump: function(obj, first){
+                        if(!first){
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else if(result.errorCode == 0  && list == null){
+             html_str = '<tr class="low"><td colspan="6" class="text-center">暂无数据</td></tr>';
+            }else{
+                html_str = '<tr class="low"><td colspan="6" class="text-center">数据错误：'+result.err_msg+'</td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+            $("#doConversion").trigger("change");
+        });
+    };
+    //运行
+    //search();
+    var bankCode = $('select[name="bankName"]').val();
+    if(bankCode!=''){
+        search();
+    }
+    $('.search').click(function () {
+        search(1);
+    });
+    //元万元亿切换
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+
+        $('.doVersionOne').each(function(i,e){
+            if (!$(this).attr('number')) {
+                $(this).attr('number',$(this).text());
+            }
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+            
+            $(this).text(numberNew);                
+        });
+    });
+</script>
+{/block}

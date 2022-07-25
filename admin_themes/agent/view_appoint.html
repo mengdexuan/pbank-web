@@ -1,0 +1,231 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+        <span class="layui-breadcrumb">
+            <a href="{:url('admin/agent/appoint')}">代理预约列表</a>
+            <a><cite>预约详情</cite></a>
+        </span>
+            {if $data}
+        <div class="info-item" style="margin-top: 20px;">
+            <div class="info-inline" style="font-size:16px;font-weight:bold;">
+                <label class="info-label" style="font-size:16px;font-weight:bold;">预约单号</label>
+                <div class="info-text">
+                    {$data['planCode']}
+                    <div class="mini-qr">
+                        <div id="qr_task" style=""></div>
+                        <img src="__IMG__/mini_qr.png" style="">
+                    </div>
+                </div>
+            </div>
+            <div class="layui-inline" style="height: 32px;margin-bottom: 27px">
+                <label class="layui-form-label" style="text-align:left;margin-right: -58px;">单位：</label>
+                <div class="layui-input-inline">
+                    <select class="layui-input" style="cursor: pointer;width: 68px;" id="doConversion">
+                        <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元</option>
+                        <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-inline">
+                <label class="info-label">业务类型</label>
+                <div class="info-text">
+                    {if $data['planType'] == 0}
+                    被代理行交款
+                    {else}
+                    被代理行取款
+                    {/if}
+                </div>
+            </div>
+            <div class="info-inline">
+                <label class="info-label">被代理行</label>
+                <div class="info-text">
+                    {$data['bankCodeName']|default="--"}
+                </div>
+            </div>
+            <div class="info-inline">
+                <label class="info-label">代理行</label>
+                <div class="info-text">
+                    {$data['toBankCodeName']|default="--"}
+                </div>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-inline">
+                <label class="info-label">预约状态</label>
+                <div class="info-text {if $data['planStatus'] == 0}green{else}red{/if}">
+                    {:get_agent_appoint_status($data['planStatus'])}
+                </div>
+            </div>
+            <div class="info-inline">
+                <label class="info-label">金额</label>
+                <div class="info-text red doVersionOne">
+                    {:number_format($data['planAmount'],2,'.',',')}
+                </div>
+            </div>
+            <div class="info-inline">
+                <label class="info-label">审核人</label>
+                <div class="info-text">
+                    {$data['auditor']|default="--"}
+                </div>
+            </div>
+        </div>       
+        <div class="info-item">
+            <div class="info-inline">
+                <label class="info-label">任务单号</label>
+                <div class="info-text">
+                    {if $data['taskCode']}
+                    <a href="__ROOT__/admin/agent/view_task/task_code/{$data['taskCode']}">{$data['taskCode']}</a>
+                    {else}
+                        <a href="javascript:;">--</a>
+                    {/if}
+                </div>
+            </div>
+            <div class="info-inline">
+                <label class="info-label">执行日期</label>
+                <div class="info-text">
+                    {$data['planTime']|default="--"}
+                </div>
+            </div>
+            <div class="info-inline">
+                <label class="info-label">创建人</label>
+                <div class="info-text">
+                    {$data['creator']|default="--"}
+                </div>
+            </div>
+        </div>   
+        <div class="info-item">
+            <div class="info-inline">
+                <label class="info-label">创建时间</label>
+                <div class="info-text">
+                    {:date('Y-m-d',$data['createTime'])}
+                </div>
+            </div>
+            <div class="info-inline">
+                <label class="info-label">执行日期</label>
+                <div class="info-text">
+                    {$data['planTime']|default="--"}
+                </div>
+            </div>
+            <div class="info-inline">
+                <label class="info-label">审核时间</label>
+                <div class="info-text">
+                    {if $data['auditTime']}
+                    {:date('Y-m-d',$data['auditTime']/1000)}
+                    {else}
+                    --
+                    {/if}
+                </div>
+            </div>
+        </div>    
+        <div class="info-item">
+            <div class="info-inline">
+                <label class="info-label">原因</label>
+                <div class="info-text" style="width: 900px;">
+                    {$data['reason']|default="--"}
+                </div>
+            </div>
+        </div>     
+        <table class="layui-table in-scan">
+            <thead>
+            <tr>
+                <td width="25%">版别</td>
+                <td width="25%">预约金额</td>
+                <td width="25%">双流同步</td>
+                <td width="25%">未双流同步</td>
+            </tr>
+            </thead>
+            <tbody>
+            {volist name="$data['planDetailList']" id="vo"}
+                {if ($vo['valutaAmount']-$vo['freeAmount']+$vo['valutaAmount']+$vo['freeAmount']) > 0}
+                <tr class="valuta-tr" data="{$vo['valutaCode']}">
+                    <td>{:get_valuta($vo['valutaCode'],'valuta_name')}</td>
+                    <td class="doVersionOne">{:number_format($vo['valutaAmount'],2,'.',',')}</td>
+                    <td class="sync-num doVersionOne" data="{$vo['valutaFlag'] == 1 ? $vo['valutaAmount']:0}">{:number_format($vo['valutaFlag'] == 1 ? $vo['valutaAmount']:0,2,'.',',')}</td>
+                    <td class="unsync-num doVersionOne {if $vo['freeAmount'] != 0 && get_valuta($vo['valutaCode'],'valuta_flag') != 0} red{/if}" data="{$vo['valutaFlag'] == 0 ? $vo['valutaAmount'] : 0}">{:number_format($vo['valutaFlag'] == 0 ? $vo['valutaAmount']:0,2,'.',',')}</td>
+                </tr>
+                {/if}
+            {/volist}
+            </tbody>
+            <tfoot>
+            <tr>
+                <td>合计</td>
+                <td class="doVersionOne"">{:number_format($data['planAmount'],2,'.',',')}</td>
+                <td class="doVersionOne">{:number_format($data['doubleAmount'],2,'.',',')}</td>
+                <td class="doVersionOne">{:number_format($data['freeAmount'],2,'.',',')}</td>
+            </tr>
+            </tfoot>
+        </table>
+        <div class="info-item">
+            <div class="info-inline">
+                <label class="info-label">备注</label>
+                <div class="info-text">
+                    {$data['note']|default="--"}
+                </div>
+            </div>
+        </div>   
+
+        <br>
+        <div id="page_box"></div>
+        <input type="hidden" id="planCode" value="{$data['planCode']}">
+        <input type="hidden" id='taskUnExistent' value="0">
+        {else}
+        <input type="hidden" id='taskUnExistent' value="1">
+        {/if}
+        </div>
+    </div>
+</div>
+{/block}
+{block name="js"}
+<script src="__JS__/layui/layui.js"></script>
+<script src="__JS__/pinyin.js"></script>
+<script src="__JS__/initials.js"></script>
+<script src="__JS__/jquery.qrcode.js"></script>
+{/block}
+{block name="script"}
+<script>
+    var taskUnExistent = $('#taskUnExistent').val();
+    if (taskUnExistent == 1) {
+        layer.msg('该预约号不存在');
+        setTimeout(function(){
+          window.location.href = '/admin/agent/appoint.html'
+        }, 2000);
+    }
+    var planCode = $('#planCode').val();
+    $('#qr_task').qrcode({width:200,height:200,correctLevel:0,text:planCode});
+    //元万元亿切换
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+
+        $('.doVersionOne').each(function(i,e){
+            if (!$(this).attr('number')) {
+                $(this).attr('number',$(this).text());
+            }
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+            
+            $(this).text(numberNew);                
+        });
+    });
+    $("#doConversion").trigger("change");
+</script>
+{/block}

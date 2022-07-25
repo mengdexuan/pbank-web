@@ -1,0 +1,142 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <span class="layui-breadcrumb">
+            <!--<a href="{:url('admin/pack/search',['code'=>$code])}">包查询</a>-->
+                <a href="{:url('admin/pack/search')}">包查询</a>
+            <a><cite>包号流转轨迹</cite></a>
+            </span>
+            <div class="title-box">
+                <div class="title">包号: <span class="bundle_code">{$code}</span></div>
+            </div>
+            <div class="layui-tab-item layui-show">
+                <table class="new-table" id="data_table">
+                    <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>业务类型</th>
+                        <th>所属银行</th>
+                        <th>流转轨迹信息</th>
+                        <th>所属任务号</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td colspan="5" style="text-align: center">暂无数据</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div id="page_box"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    $('.search').click(function(){
+        search();
+    });
+    function search(curr){
+        layer.load(2);
+        var code = $.trim($('.bundle_code').text());
+        var url = "__ROOT__/api/bigdata/packs_record";
+        var op = {
+            page: curr || 1,
+            code:code,
+            limit: 20 //向服务端传的参数，此处只是演示
+        };
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            if(result.err_code == 0){
+                var tasks = result.data;
+                var html_str = '';
+                for(var i = 0; i < tasks.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td>"+tasks[i].updateTime+"</td>";
+                    html_str = html_str + "<td>"+tasks[i].status_str+"</td>";
+                    //兼容退回
+                    if (tasks[i].status == '20' && tasks[i].bank_str === null) {
+                        html_str = html_str + "<td>"+tasks[i].packData.from+"</td>";
+                    }else{
+                        //兼容回退状态时所属银行显示错误　０９２３去掉此处
+                        // if (tasks[i].status == '20') {
+                        //     html_str = html_str + "<td>"+tasks[i].packData.to+"</td>";
+                        // }else{
+                        //     html_str = html_str + "<td>"+tasks[i].bank_str+"</td>";
+                        // }
+                        html_str = html_str + "<td>"+tasks[i].bank_str+"</td>";
+                    }
+                    if(tasks[i].status==3){
+                        html_str = html_str + "<td>"+tasks[i].packData.to+"</td>";
+                    }else{
+                        html_str = html_str + "<td>"+tasks[i].packData.from+"<span class='red'> --- </span> "+tasks[i].packData.to+"</td>";
+                    }
+                    //html_str = html_str + "<td>"+tasks[i].packData.from+"<span class='red'>--></span> "+tasks[i].packData.to+"</td>";
+                    html_str = html_str + '<td><a href="__ROOT__/admin/task/view_task/task_code/'+tasks[i].packData.task+'.html" >'+tasks[i].packData.task+'</a></td>';
+                    // if(tasks[i].status === 1 || tasks[i].status === 2 || tasks[i].status === 3 || tasks[i].status === 4 || (tasks[i].status === 20 && tasks[i].packData.task) || (tasks[i].status === 40 && tasks[i].packData.task)){
+                    //     html_str = html_str + '<td><a href="__ROOT__/admin/task/view_task/task_code/'+tasks[i].packData.task+'.html" >'+tasks[i].packData.task+'</a></td>';
+                    // }else{
+                    //     html_str = html_str + "<td>--</td>";
+                    // }
+                    html_str = html_str + "<td></td>";
+                    html_str = html_str + '</tr>';
+                }
+                if(html_str == ''){
+                    html_str = '<td colspan="7" style="text-align: center">暂无数据</td>';
+                }
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: result.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = '<tr><td colspan="5" style="text-align: center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="location = location">刷新</a></td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+        });
+    };
+    //运行
+    search();
+</script>
+
+<script>
+    var dom_pack = $('.pack_code');
+    dom_pack.on("keypress", function(e){
+        var kc = e.which || e.keyCode;
+        if(kc == 13){
+
+            var thisval = $.trim($(this).val());
+            try{
+                thisval = JSON.parse(thisval).bc;
+                if($.trim(thisval) != ''){
+                    $(this).val(thisval);
+                }
+            }catch(e){
+
+            }
+
+        }
+    }).focus().select();
+    $('#pack_form').submit(function () {
+        thisval = $.trim(dom_pack.val());
+//        if(!(new RegExp("^B[a-zA-Z0-9]{4}[0-9]{10}$")).test(thisval)){
+//            $("#pack-code-scan").select();
+//            layer.msg('包号格式不正确！');
+//            return false;
+//        }
+    })
+</script>
+{/block}

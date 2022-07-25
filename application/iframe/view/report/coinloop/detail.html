@@ -1,0 +1,140 @@
+{extend name="base" /}
+{block name="body"}
+<!--tab标签-->
+<style>
+    .data_row input {
+        width: 100%;
+        text-align: center;
+        border: none;
+    }
+</style>
+<div class="layui-tab layui-tab-brief">
+    <div class="layui-tab-content">
+        <span class="layui-breadcrumb">
+            <a href="{:url('iframe/report/index',['bank_code'=>$bank_key,'bankCode'=>$bank_code])}">报表列表</a>
+            <a href="{:url('iframe/report/list',['reportNum'=>$reportNum,'bank_code'=>$bank_key,'bankCode'=>$bank_code])}">{:show_report_name($reportNum)}</a>
+            <a><cite>详情</cite></a>
+        </span>
+        <div style="margin-bottom:10px;font-size:20px;font-weight:bold;text-align:center;">{$data['year']}年第{$data['quarter']}季度{:show_report_name($reportNum)}</div>
+        <table class="layui-table report">
+            <caption>硬币自循环数量</caption>
+            <caption class="t-tip">单位：万枚</caption>
+            <thead>
+            <tr>
+                <th width="25%"></th>
+                <th width="25%">1元硬币</th>
+                <th width="25%">5角硬币</th>
+                <th width="25%">1角硬币</th>
+            </tr>
+            </thead>
+            <tbody>
+            {volist name="$coinlist['return']" id="vo"}
+            <tr class="data_row coinCirculation">
+                <td class="c"><input type="text" class="rowCode" value="{$vo['rowCode']}" readonly style="display:none;">{:get_report_name($reportNum,$vo['rowCode'])}</td>
+                <td class="c"><input data-type="" type="number" min="0" max="99999999" data-class="oneCoin" class="oneCoinOne" value="{:number_format($vo['oneCoin'],2,'.',',')}" readonly></td>
+                <td class="c"><input data-type="" type="number" data-class="fiftyCentsCoin" class="fiftyCentsCoinOne" value="{:number_format($vo['fiftyCentsCoin'],2,'.',',')}" readonly></td>
+                <td class="c"><input data-type="" type="number" min="0" max="99999999" data-class="tenCentsCoin" class="tenCentsCoinOne"  value="{:number_format($vo['tenCentsCoin'],2,'.',',')}" readonly></td>
+            </tr>
+            {/volist}
+            <tr>
+                <td class="c">合计</td>
+                <td class="c oneCoinOneSum"></td>
+                <td class="c fiftyCentsCoinOneSum"></td>
+                <td class="c tenCentsCoinOneSum"></td>
+            </tr>
+
+            {volist name="$coinlist['delivery']" id="vo"}
+            <tr class="data_row coinCirculation">
+                <td class="c"><input type="text" class="rowCode" value="{$vo['rowCode']}" readonly style="display:none;">{:get_report_name($reportNum,$vo['rowCode'])}</td>
+                <td class="c"><input data-type="" type="number" min="0" max="99999999" data-class="oneCoin" class="oneCoinTwo"  value="{:number_format($vo['oneCoin'],2,'.',',')}" readonly></td>
+                <td class="c"><input data-type="" type="number" data-class="fiftyCentsCoin" class="fiftyCentsCoinTwo" value="{:number_format($vo['fiftyCentsCoin'],2,'.',',')}" readonly></td>
+                <td class="c"><input data-type="" type="number" min="0" max="99999999" data-class="tenCentsCoin" class="tenCentsCoinTwo" value="{:number_format($vo['tenCentsCoin'],2,'.',',')}" readonly></td>
+            </tr>
+            {/volist}
+            <tr>
+                <td class="c">合计</td>
+                <td class="c oneCoinTwoSum"></td>
+                <td class="c fiftyCentsCoinTwoSum"></td>
+                <td class="c tenCentsCoinTwoSum"></td>
+            </tr>
+            </tbody>
+        </table>
+
+
+        <table class="layui-table report" style="margin-top:45px;">
+            <caption>硬币自助设备配备数量</caption>
+            <caption class="t-tip">单位：台</caption>
+            <thead>
+            <tr>
+                <th width="25%"></th>
+                <th width="25%">纸硬币兑换机</th>
+                <th width="25%">硬币存取款一体机</th>
+                <th width="25%">硬币清分处理机</th>
+            </tr>
+            </thead>
+            <tbody>
+            {volist name="$data['coinSelfHelp']" id="vo"}
+            <tr class="data_row coinSelfHelp">
+                <td class="c"><input type="text" class="rowCode" value="{$vo['rowCode']}" readonly style="display:none;">{:get_report_name($reportNum,$vo['rowCode'])}</td>
+                <td class="c"><input data-type="" type="number" min="0" max="99999999" class="cashChange" value="{$vo['cashChange']}" readonly></td>
+                <td class="c"><input data-type="" type="number" min="0" max="99999999" class="atmCoin" value="{$vo['atmCoin']}" readonly></td>
+                <td class="c"><input data-type="" type="number" min="0" max="99999999" class="billSortMachine" value="{$vo['billSortMachine']}" readonly></td>
+            </tr>
+            {/volist}
+            <tr>
+                <td class="c">合计</td>
+                <td class="c cashChangeSum"></td>
+                <td class="c atmCoinSum"></td>
+                <td class="c billSortMachineSum"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{/block}
+{block name="script"}
+<script>
+    $(function(){
+        /*自动计算金额*/
+        function setNum(a,t){
+            var num = 0;
+            var class1 = '.'+a;
+            var class2 = '.'+a+'Sum';
+            $(class1).each(function(){
+                var value = $(this).val();
+                if(value>99999999){
+                    layer.msg('输入的金额过大！');
+                    $(this).val('');
+                    return false;
+                }
+                if(value<0){
+                    layer.msg('输入的金额不能小于0！');
+                    $(this).val('');
+                    return false;
+                }
+                var length = $(this).val().length;
+                var first = value.indexOf(".");
+                if( first>0 && length - first >5 ){
+                    layer.msg('输入的金额过小！');
+                    $(this).val('');
+                    return false;
+                }
+                num += Number($(this).val()*10000);
+            });
+            $(class2).html(num/10000);
+        }
+
+        /*自执行函数---在查看和修改里面需要用*/
+        setNum('oneCoinOne');
+        setNum('fiftyCentsCoinOne');
+        setNum('tenCentsCoinOne');
+        setNum('oneCoinTwo');
+        setNum('fiftyCentsCoinTwo');
+        setNum('tenCentsCoinTwo');
+        setNum('cashChange');
+        setNum('atmCoin');
+        setNum('billSortMachine');
+    })
+</script>
+{/block}

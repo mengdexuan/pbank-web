@@ -1,0 +1,179 @@
+{extend name="base" /}
+{block name="body"}
+<!--tab标签-->
+<style>
+    .report {
+        display: inline-block;
+        width: 50%;
+        float: left;
+    }
+    .data_row input {
+        width: 100%;
+        text-align: right;
+        border: none;
+    }
+    .table_ul li {
+        display: inline-block;
+        width: 33.3%;
+        height: 32px;
+        line-height: 32px;
+        float: left;
+    }
+    .table_ul li input {
+        border: none;
+    }
+</style>
+<div class="layui-tab layui-tab-brief">
+    <div class="layui-tab-content">
+        <span class="layui-breadcrumb">
+            <a href="{:url('iframe/report/index',['bank_code'=>$bank_key,'bankCode'=>$bank_code])}">报表列表</a>
+            <a href="{:url('iframe/report/list',['reportNum'=>$reportNum,'bank_code'=>$bank_key,'bankCode'=>$bank_code])}">{:show_report_name($reportNum)}</a>
+            <a><cite>详情</cite></a>
+        </span>
+        <div style="margin-top:30px;clear:both;font-size:20px;font-weight:bold;text-align:center;">{$data['year']}年第{$data['quarter']}季度{:show_report_name($reportNum)}</div>
+        <div style="clear:both;"></div>
+        <table class="layui-table report">
+            <thead>
+            <tr>
+                <th rowspan="2" width="16%">项目名称</th>
+                <th colspan="2" width="">金额（元）</th>
+                <th colspan="2" width="">同比增减（元）</th>
+                <th colspan="2" width="">同比涨幅（%）</th>
+                <th colspan="2" width="">占比（%）</th>
+            </tr>
+            <tr>
+                <th width="12%">本期</th>
+                <th width="12%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+            </tr>
+            </thead>
+            <tbody>
+            {volist name="$rowlist['in']" id="vo"}
+            <tr class="data_row">
+                <td class="c"><input type="text" class="rowCode" value="{$vo['rowCode']}" readonly style="display:none;">{:get_report_name($reportNum,$vo['rowCode'])}</td>
+                <td class="c"><input data-type="" type="number" min="0" max="99999999" class="amount" value="{:number_format($vo['amount'],2,'.',',')}" readonly></td>
+                <td class="c"><input data-type="" type="number" min="0" max="99999999" class="totalAmount" value="{:number_format($vo['totalAmount'],2,'.',',')}" readonly></td>
+                <td class="c"><input type="text" class="curAddSub" value="{:number_format($vo['curAddSub'],2,'.',',')}" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="{:number_format($vo['totalAddSub'],2,'.',',')}" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="{$vo['curRise']}" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="{$vo['totalRise']}" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="{$vo['curRatio']}" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="{$vo['totalRatio']}" readonly></td>
+            </tr>
+            {/volist}
+            <tr>
+                <td class="c"><input type="text" class="rowCode" value="" readonly="" style="display:none;">净投放（+）或净回笼（-）</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+            </tr>
+            </tbody>
+        </table>
+        <table class="layui-table report">
+            <thead>
+            <tr>
+                <th rowspan="2" width="16%">项目名称</th>
+                <th colspan="2" width="">金额（元）</th>
+                <th colspan="2" width="">同比增减（元）</th>
+                <th colspan="2" width="">同比涨幅（%）</th>
+                <th colspan="2" width="">占比（%）</th>
+            </tr>
+            <tr>
+                <th width="12%">本期</th>
+                <th width="12%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+            </tr>
+            </thead>
+            <tbody>
+            {volist name="$rowlist['out']" id="vo"}
+            <tr class="data_row">
+                <td class="c"><input type="text" class="rowCode" value="{$vo['rowCode']}" readonly style="display:none;">{:get_report_name($reportNum,$vo['rowCode'])}</td>
+                <td class="c"><input data-type="" type="number" min="0" max="99999999" class="amount" value="{:number_format($vo['amount'],2,'.',',')}" readonly></td>
+                <td class="c"><input data-type="" type="number" min="0" max="99999999" class="totalAmount" value="{:number_format($vo['totalAmount'],2,'.',',')}" readonly></td>
+                <td class="c"><input type="text" class="curAddSub" value="{:number_format($vo['curAddSub'],2,'.',',')}" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="{:number_format($vo['totalAddSub'],2,'.',',')}" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="{$vo['curRise']}" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="{$vo['totalRise']}" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="{$vo['curRatio']}" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="{$vo['totalRatio']}" readonly></td>
+            </tr>
+            {/volist}
+            <tr>
+                <td class="c"><input type="text" class="rowCode" value="" readonly="" style="display:none;">净投放（+）或净回笼（-）</td>
+                <td class="">{:number_format($rowlist['total']['amount'],2,'.',',')}</td>
+                <td class="">{:number_format($rowlist['total']['totalAmount'],2,'.',',')}</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <ul class="table_ul">
+            <li>全辖银行营业网点（个）：<input type="number" min="0" max="99999999" class="ratioInput outlets" value="{$data['outlets']}" readonly></li>
+            <li>抽样银行营业网点（个）：<input type="number" min="0" max="99999999" class="ratioInput sampleOutlets" value="{$data['sampleOutlets']}" readonly></li>
+            <li>抽样比例（%）：<span class="ratio"></span></li>
+        </ul>
+
+        <ul class="table_ul">
+            <li>全辖银行自助机具（台）：<input type="number" min="0" max="99999999" class="ratioInput2 selfHelp" value="{$data['selfHelp']}" readonly></li>
+            <li>抽样银行自助机具（台）：<input type="number" min="0" max="99999999" class="ratioInput2 sampleSelfHelp" value="{$data['sampleSelfHelp']}" readonly></li>
+            <li>抽样比例（%）：<span class="ratio2"></span></li>
+        </ul>
+        <div style="clear:both;"></div>
+    </div>
+</div>
+
+{/block}
+{block name="script"}
+<script>
+    $(function(){
+        /*计算百分比*/
+        function ratio(){
+            var outlets = $('.outlets').val();
+            var sampleOutlets = $('.sampleOutlets').val();
+            var ratio = Number((Number(sampleOutlets)/Number(outlets)*100).toFixed(2));
+            if (!ratio || ratio == Infinity) {
+                ratio = '--';
+            }
+            $('.ratio').html(ratio+'%');
+        }
+        ratio();
+        $('.ratioInput').bind('input propertychange', function() { ratio(); });
+        $('.ratioInput').blur(function(){ ratio(); });
+        $('.ratioInput').on('keypress',function(){ ratio(); });
+
+        function ratio2(){
+            var selfHelp = $('.selfHelp').val();
+            var sampleSelfHelp = $('.sampleSelfHelp').val();
+            var ratio = Number((Number(sampleSelfHelp)/Number(selfHelp)*100).toFixed(2));
+            if (!ratio || ratio == Infinity) {
+                ratio = '--';
+            }
+            $('.ratio2').html(ratio+'%');
+        }
+        ratio2();
+        $('.ratioInput2').bind('input propertychange', function() { ratio2(); });
+        $('.ratioInput2').blur(function(){ ratio2(); });
+        $('.ratioInput2').on('keypress',function(){ ratio2(); });
+    })
+</script>
+{/block}

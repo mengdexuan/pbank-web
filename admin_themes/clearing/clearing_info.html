@@ -1,0 +1,105 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <input type="hidden" class="bank_code" value="{$bank_code}">
+        <div class="layui-tab-content">
+            <span class="layui-breadcrumb">
+        <a href="{:url('admin/clearing/index')}">清分概览银行列表</a>
+        <a><cite>{:get_bank($bank_code)}清分详情</cite></a>
+        </span>
+        <div class="info-item" style="margin: 30px 0;">
+            <div class="info-inline">
+                <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 清分金额</label>
+                <div class="pack-info-text"><span id="amount"></span></div>
+            </div>
+            <div class="info-inline">
+                <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 状态</label>
+                <div class="pack-info-text"><span id="status"></span></div>
+            </div>
+            <div class="info-inline">
+                <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 所属银行</label>
+                <div class="pack-info-text" style="width: auto">
+                    <span id="bank"></span>
+                </div>
+            </div>
+        </div>
+        <div id="container" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script src="__JS__/highchart/highcharts.js"></script>
+<script src="__JS__/highchart/modules/exporting.js"></script>
+<script>
+    $(function () {
+        $.ajax({
+            type: "GET",
+            url: '__ROOT__/api/bank/query_work_load_info',
+            data: {bank_code:$('.bank_code').val()},
+            dataType: "json",
+            success: function (result) {
+                var data = result.data;
+
+                if(result.err_code == 0  && data != null){
+                    $('#amount').html(data.work_load_amount_str);
+                    $('#bank').html(data.bank_code_str);
+                    $('#status').html(data.status_str);
+                    Highcharts.chart('container', {
+                        chart: {
+                            type: 'areaspline'
+                        },
+                        credits: {
+                            enabled: false //不显示LOGO
+                        },
+                        colors:[
+                            '#1DB3A1',
+                            '#EE713B'
+                        ],
+                        tooltip: {
+                            pointFormatter: function(){
+                                return this.series.name +':'+ number_format(this.y,2,'.',',')+'<br>';
+                            },
+                            valueSuffix: '元',
+                            shared: true
+                        },
+                        title: {
+                            text: '按日清分量统计'
+                        },
+                        subtitle: {
+                            text: ''
+                        },
+                        xAxis: {
+                            categories: data.date_list
+                        },
+                        yAxis: {
+                            title: {
+                                text: '量(元)'
+                            },
+                            labels: {
+                                formatter: function () {
+                                    return this.value;
+                                }
+                            }
+                        },
+                        plotOptions: {
+                            areaspline: {
+                                fillOpacity: 0.2
+                            }
+                        },
+                        series: [{
+                            name: '清分量',
+                            data: data.amount_list
+                        },{
+                            name: '关联量',
+                            data: data.relation_list
+                        }]
+                    });
+                }
+            }
+        });
+    });
+</script>
+{/block}

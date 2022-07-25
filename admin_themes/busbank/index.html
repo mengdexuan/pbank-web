@@ -1,0 +1,278 @@
+{extend name="base" /}
+{block name="body"}
+<style>
+    .report.on,
+    .chart.on {
+        background: #009688;
+        color: #fff;
+    }
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+
+            <div class="title-box" style="margin: 10px 0;">
+                <div class="title">预约交取款统计</div>
+                <div class="link">
+                </div>
+            </div>
+            <form class="" style="margin-top: 10px;" onsubmit="return false;">
+                <div class="layui-form-item">
+                    <div class="layui-input-inline w82">
+                        <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="before">前一天</a>
+                    </div>
+                    <div class="layui-input-inline date-box">
+                        <input type="text" name="beginTime" placeholder="开始日期" id="beginTime"  value="{$query_date}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                    </div>
+                    <div class="layui-input-inline wa date-center">-</div>
+                    <div class="layui-input-inline date-box">
+                        <input type="text" name="beginTime" placeholder="结束日期" id="endTime"  value="{$query_date}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                    </div>
+                    <div class="layui-input-inline w82">
+                        <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="after">后一天</a>
+                    </div>
+                    <div class="layui-input-inline" style="width: 60px;margin-bottom: 0px;line-height: 32px;">
+                        商行名称:
+                    </div>
+                    <div class="layui-input-inline w170">
+                        <input type="text" name="bankName" autocomplete="off" placeholder="" value="" class="layui-input keyword">
+                    </div>
+                    <div class="layui-input-inline w70">
+                        <input type="button" name="search" class="layui-btn layui-btn-small search" value="查询" id="search">
+                    </div>
+                    <div class="layui-input-inline" >
+                        <a href="javascript:;" id="download" class="layui-btn layui-btn-small">报表下载</a>
+                    </div>
+                    <div class="layui-inline" style="height: 32px;margin-right: -288px;">
+                        <label class="layui-form-label" style="text-align:left;margin-right: -58px;">单位：</label>
+                        <div class="layui-input-inline">
+                            <select class="layui-input" style="cursor: pointer;width: 68px;" id="doConversion">
+                                <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元</option>
+                                <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <div id="container" style="height: 400px; margin: 0 auto"></div>
+            <table id="reportForm" class="layui-table" style="margin: -400px 0;">
+                <thead>
+                    <tr>
+                        <th rowspan="3" style="text-align: center;">商业银行</th>
+                        <th colspan="4" style="text-align: center;">相互取现</th>
+                        <th colspan="4" style="text-align: center;">与人行调交款</th>
+                        <th colspan="2" style="text-align: center;">代理业务</th>
+                        <th colspan="4" style="text-align: center;">调款合计</th>
+                    </tr>
+                    <tr>
+                        <th colspan="2" style="text-align: center;">调出</th>
+                        <th colspan="2" style="text-align: center;">调入</th>
+                       　<th colspan="2" style="text-align: center;">向人行交款</th>
+                        <th colspan="2" style="text-align: center;">从人行取款</th>
+                        <th colspan="2" style="text-align: center;">代理</th>
+                        <th colspan="2" style="text-align: center;">调出</th>
+                        <th colspan="2" style="text-align: center;">调入</th>
+                    </tr>
+                    <tr>
+                        <th>双流同步</th>
+                        <th>总金额</th>
+                        <th>双流同步</th>
+                        <th>总金额</th>
+                        <th>双流同步</th>
+                        <th>总金额</th>
+                        <th>双流同步</th>
+                        <th>总金额</th>
+                        <th>双流同步</th>
+                        <th>总金额</th>
+                        <th>双流同步</th>
+                        <th>总金额</th>
+                        <th>双流同步</th>
+                        <th>总金额</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    var _type = 'today';
+    var start = {
+        elem:'focus',
+        istoday: true
+    };
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    document.getElementById('endTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+   function checkVal(){
+        var beginTimeEle = document.getElementById('beginTime');
+        var endTimeEle = document.getElementById('endTime');
+        if (beginTimeEle.value > endTimeEle.value) {
+            layer.msg('开始日期不能大于结束日期');
+            endTimeEle.value = beginTimeEle.value;
+            return false;
+        }
+        return true;
+    }
+    function getDate (str){
+        var y = str.getFullYear();
+        var m = Number(str.getMonth())+1;
+        if(m.toString().length<2){
+            m = '0'+m;
+        }
+        var d = str.getDate();
+        if(d.toString().length<2){
+            d = '0'+d;
+        }
+        var date = y + '-' + m + '-' + d;
+        return date;
+    }
+    $('#before').click(function(){
+        var start = $('#beginTime').val();
+        var end = $('#endTime').val();
+        var curDate = '';
+        if(start!=''){
+            curDate = Date.parse(start);
+        }else if(start == '' && end != ''){
+            curDate = Date.parse(end);
+        }else if(start == '' && end == ''){
+            layer.msg('请选择一个时间点！');
+            return false;
+        }
+        var preDate = new Date(curDate - 24*60*60*1000);
+        $('#beginTime').val(getDate(preDate));
+        $('#endTime').val(getDate(preDate));
+        select_data();
+    });
+    $('#after').click(function(){
+        var start = $('#beginTime').val();
+        var end = $('#endTime').val();
+        var curDate = '';
+        if(end!=''){
+            curDate = Date.parse(end);
+        }else if(start != '' && end == ''){
+            curDate = Date.parse(start);
+        }else if(start == '' && end == ''){
+            layer.msg('请选择一个时间点！');
+            return false;
+        }
+        var nextDate = new Date(curDate + 24*60*60*1000);
+        $('#beginTime').val(getDate(nextDate));
+        $('#endTime').val(getDate(nextDate));
+        select_data();
+    });
+    var interface_url = "{$interface_url}";
+    $('#search').click(function(){
+        if(checkVal() === true){
+            select_data();
+        }
+    });
+    function select_data() {
+        var beginTime = $('#beginTime').val();
+        var endTime = $('#endTime').val();
+        var bankName = $('input[name="bankName"]').val();
+        layer.load(2);
+        //报表ajax请求
+        $.ajax({
+            type: "GET",
+            url: '__ROOT__/api/bank/bank_transfer_report',
+            data: {
+                beginDate:beginTime,
+                endDate:endTime,
+                bankName:bankName
+            },
+            dataType: "json",
+            success: function (result) {              
+                var data = result.data;
+                if(result.success && result.data != null){
+                    var html_str = '';
+                    for(var i = 0; i < data.length; i++){
+                        html_str += "<tr>";
+                        html_str += "<td>"+data[i].bankName+"</td>";
+                        html_str += "<td class='doVersionOne'>"+data[i].eachOut.money+"</td>";
+                        html_str += "<td class='doVersionOne'>"+data[i].eachOut.moneyTotal+"</td>";
+                        html_str += "<td class='doVersionOne'>"+data[i].eachIn.money+"</td>";
+                        html_str += "<td class='doVersionOne'>"+data[i].eachIn.moneyTotal+"</td>";
+                        html_str += "<td class='doVersionOne'>"+data[i].pubOut.money+"</td>";
+                        html_str += "<td class='doVersionOne'>"+data[i].pubOut.moneyTotal+"</td>";
+                        html_str += "<td class='doVersionOne'>"+data[i].pubIn.money+"</td>";
+                        html_str += "<td class='doVersionOne'>"+data[i].pubIn.moneyTotal+"</td>";
+                        html_str += "<td class='doVersionOne'>"+data[i].agent.money+"</td>";
+                        html_str += "<td class='doVersionOne'>"+data[i].agent.moneyTotal+"</td>";
+                        html_str += "<td class='doVersionOne'>"+data[i].sumOut.money+"</td>";
+                        html_str += "<td class='doVersionOne'>"+data[i].sumOut.moneyTotal+"</td>";
+                        html_str += "<td class='doVersionOne'>"+data[i].sumIn.money+"</td>";
+                        html_str += "<td class='doVersionOne'>"+data[i].sumIn.moneyTotal+"</td>";
+                        html_str += '<tr>';
+                    }
+                    if(html_str == ''){
+                        html_str = '<tr><td colspan="7" class="text-center">暂无数据</td></tr>';
+                    }
+                    $('#reportForm').find('tbody').html(html_str);
+                    layer.closeAll('loading');
+                    $("#doConversion").trigger("change");
+                }else{
+                    layer.msg(result.msg || result.status);
+                }
+            },
+            error:function(){
+                layer.msg('稍后尝试');
+            }
+        });
+        setTimeout(function(){
+            layer.closeAll('loading');
+        },3000);
+    }
+        
+    $('#download').mouseover(function(){
+        if(!checkVal()){
+            return false;
+        }
+        var beginTime = $('#beginTime').val();
+        var endTime = $('#endTime').val();
+        var bankName = $('input[name="bankName"]').val();
+        var url = interface_url+'/bankTransfer/download?beginDate='+beginTime+'&endDate='+endTime+'&bankName='+bankName;
+        $(this).attr('href',url);
+    });
+
+    //元万元亿切换
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+
+        $('.doVersionOne').each(function(i,e){
+            if (!$(this).attr('number')) {
+                $(this).attr('number',$(this).text());
+            }
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+            
+            $(this).text(numberNew);                
+        });
+    });
+</script>
+{/block}

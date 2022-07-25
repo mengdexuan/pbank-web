@@ -1,0 +1,589 @@
+{extend name="base" /}
+{block name="css"}
+<style>
+    .layui-input-text{
+        height: 40px;
+        line-height: 40px;
+        float: left;
+        width: 300px;
+    }
+    .layui-form-label{
+        width: 90px;
+    }
+    .layui-form-item{
+        margin-bottom: 0;
+    }
+    .bg_green{
+        background-color: #dff0d8;
+    }
+    #valutatable thead tr th,#valutatable tbody tr td {
+        text-align: center;
+    }
+    .parkbox {
+        display: inline-block;
+        float: left;
+        width: 18%;
+        height: 90px;
+        background: #eee;
+        box-sizing: border-box;
+        margin: 15px;
+        padding: 20px 0;
+        text-align: center;
+        font-size: 14px;
+        color: #333;
+    }
+    .parkbox b {
+        display: inline-block;
+        margin-top: 5px;
+        font-weight: normal;
+        font-size: 20px;
+    }
+    #do-pack-btn {
+        height: 90px;
+        padding: 0;
+        line-height: 90px;
+        background: #1DB3A1;
+        color: #fff;
+        font-size: 18px;
+        cursor: pointer;
+    }
+    .layui-btn-disabled {
+        background: #eee !important;
+        color: #333 !important;
+        cursor: auto !important;
+    }
+</style>
+{/block}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+
+        <div class="layui-tab-content">
+            <span class="layui-breadcrumb">
+            <a href="{:url('admin/task/'.$version.'index')}">调拨任务概览</a>
+            <a href="{:url('admin/task/view_task',['task_code'=>$data['task_code']])}">任务详情</a>
+            <a><cite>调款入库</cite></a>
+            </span>
+            <div class="title-box" style="margin: 10px 0;">
+                <div class="title">调款入库</div>
+            </div>
+            <div class="info-item" style="margin-top: 20px; position: relative">
+                <div id="qr_task" style="position: absolute;width: 200px;height: 200px;left: 400px;"></div>
+                <div class="info-block">
+                    <label class="info-label">任务单号</label>
+                    <div class="info-text" id="task_code">
+                        {$data['task_code']}
+                    </div>
+                </div>
+                <div class="info-block">
+                    <label class="info-label">任务类型</label>
+                    <div class="info-text" id="task_type">
+                        <div class="info-text">
+                            {if condition="$data.task_type eq '1'"}
+                            残损券
+                            {else /}
+                            交取款
+                            {/if}
+                        </div>
+                    </div>
+                </div>
+                <div class="info-block">
+                    <label class="info-label">金额</label>
+                    <div class="info-text red">
+                        {:number_format($data['task_amount'],2,'.',',')}
+                    </div>
+                </div>
+                <div class="info-block">
+                    <label class="info-label">执行日期：</label>
+                    <div class="info-text">
+                        {$data['task_time']}
+                    </div>
+                </div>
+                <div class="info-block">
+                    <label class="info-label">调出银行</label>
+                    <div class="info-text">
+                        {if $data['out_bank'] == get_cur_bank()}本行{else}{:get_bank($data['out_bank'])}{/if}
+                    </div>
+                </div>
+                <div class="info-block">
+                    <label class="info-label">调入银行</label>
+                    <div class="info-text">
+                        {if $data['in_bank'] == get_cur_bank()}本行{else}{:get_bank($data['in_bank'])}{/if}
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="parkbox">任务总额<br><b class="totalnum" data="{$data['task_amount']}">{:number_format($data['task_amount'],2,'.',',')}</b></div>
+
+                {if count($data['packs']) > 0}
+                <div class="parkbox" style="padding: 11px 0;">双流同步<br>已扫描/待扫描<br><b class="sync-scan">0</b>/<b class="sync">0</b></div>
+                {else}
+                <div class="parkbox">双流同步<br><b class="sync">0</b></div>
+                {/if}
+
+                <div class="parkbox">未双流同步<br><b class="unsync">0</b></div>
+                <div class="parkbox  {if count($data['packs']) > 0}layui-btn-disabled{/if}" id="do-pack-btn">入库</div>
+            </div>
+            <table class="layui-table in-scan">
+                <thead>
+                <tr>
+                    <td>版别</td>
+                    <td>任务金额</td>
+                    <td>双流同步</td>
+                    <td>未双流同步</td>
+                </tr>
+                </thead>
+                <tbody>
+                {volist name="$data['valuta_amounts']" id="vo"}
+                <tr class="valuta-tr" data="{$vo['valuta_code']}">
+                    <td>{:get_valuta($vo['valuta_code'],'valuta_name')}</td>
+                    <td>{:number_format($vo['valuta_amount'],2,'.',',')}</td>
+                    <td class="sync-num" data="{$vo['valuta_amount']-$vo['free_amount']}">{:number_format($vo['valuta_amount']-$vo['free_amount'],2,'.',',')}</td>
+                    <td class="unsync-num {if $vo['free_amount'] != 0 && get_valuta($vo['valuta_code'],'valuta_flag') == 1} red{/if}" data="{$vo['free_amount']}">{:number_format($vo['free_amount'],2,'.',',')}</td>
+                </tr>
+                {/volist}
+                </tbody>
+                <tfoot>
+                <tr>
+                    <td>合计</td>
+                    <td class="amount-sum">{:number_format($data['task_amount'],2,'.',',')}</td>
+                    <td class="scan-sum">0</td>
+                    <td class="noscan-sum">0</td>
+                </tr>
+                </tfoot>
+            </table>
+            {if count($data['packs']) >= 0}
+            <br>
+            <div style="display:inline-block;float:left;margin-top:30px;">双流同步包号：</div>
+            <br>
+            <div class="layui-form layui-form-pane" style="display:inline-block;float:right;margin-bottom:5px;">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">包/捆/把扫描</label>
+                    <div class="layui-input-inline" style="width: 400px;">
+                        <input type="text" name="pack_code" autocomplete="off" placeholder="" value="" id="data-no-scan" class="layui-input data-no-scan pack_code">
+                    </div>
+                </div>
+            </div>
+            <table class="new-table" id="data_table">
+                <thead>
+                <tr>
+                    <th width="10%">序号</th>
+                    <th width="40%">包号</th>
+                    <th width="40%">金额</th>
+                    <th width="10%">状态</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php if(empty($data['packs']) || !isset($data['packs'])) { ?>
+                    <tr class="low">
+                        <td colspan="4" class="text-center">暂无数据</td>
+                    </tr>
+                <?php } ?>
+                {volist name="data['packs']" id="vo"  }
+                <tr class="low" data-no="{$vo.pack_code}" data-amount="{$vo.pack_amount}">
+                    <td>{$i}</td>
+                    <td>{$vo.pack_code}</td>
+                    <td class="sync_num" data="{$vo.pack_amount}">{:number_format($vo.pack_amount,2,'.',',')}</td>
+                    <td class="status">未扫描</td>
+                </tr>
+                {/volist}
+                </tbody>
+            </table>
+            <div>双流同步捆号：</div>
+            <table class="new-table" id="data_table-bundle">
+                <thead>
+                <tr>
+                    <th width="10%">序号</th>
+                    <th width="40%">捆号</th>
+                    <th width="40%">金额</th>
+                    <th width="10%">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php if(isset($data['bundles']) && $data['bundles']) { ?>
+                <?php foreach ($data['bundles'] as $k=>$vo ){ ?>
+                <tr class='low' data-no="{$vo.bundle_code}" data-amount="{$vo.bundle_amount}">
+                    <td><?php echo $k+1;?></td>
+                    <td><?php echo $vo['bundle_code'];?></td>
+                    <td class="sync_num" data="{$vo.bundle_amount}"><?php echo number_format($vo['bundle_amount']);?></td>                    
+                    <!-- <td class="status"><a href="{:url('/admin/bundle/'.$version.'index/',['bundle_code'=>$vo['bundle_code']])}" >查看</a></td> -->
+                    <td class="status">未扫描</td>
+                </tr>
+                <?php } ?>
+                <?php } else { ?>
+                    <tr class="low">
+                        <td colspan="4" class="text-center">暂无数据</td>
+                    </tr>
+                <?php } ?>
+                </tbody>
+            </table>
+            <div>双流同步把号：</div>
+            <table class="new-table" id="data_table-handle">
+                <thead>
+                <tr>
+                    <th width="10%">序号</th>
+                    <th width="40%">把号</th>
+                    <th width="40%">金额</th>
+                    <th width="10%">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php if(isset($data['handles']) && $data['handles']) { ?>
+                <?php foreach ($data['handles'] as $k=>$vo ){ ?>
+                <tr class='low' data-no="{$vo.handle_code}" data-amount="{$vo.handle_amount}">
+                    <td><?php echo $k+1;?></td>
+                    <td><?php echo $vo['handle_code'];?></td>
+                    <td class="sync_num" data="{$vo.handle_amount}"><?php echo number_format($vo['handle_amount']);?></td>
+                    <td class="status">未扫描</td>
+                </tr>
+                <?php } ?>
+                <?php } else { ?>
+                    <tr class="low">
+                        <td colspan="4" class="text-center">暂无数据</td>
+                    </tr>
+                <?php } ?>
+                </tbody>
+            </table>
+            <div id="page_box"></div>
+            {else}
+            {/if}
+        </div>
+    </div>
+</div>
+{/block}
+{block name="js"}
+<script src="__JS__/jquery.qrcode.js"></script>
+<script src="__JS__/md5.js"></script>
+{/block}
+{block name="script"}
+<script>
+    var dom_pack = $('.pack_code');
+    var dom_amount_sum = $('.amount_sum');
+    var dom_pack_num = $('.pack_num');
+    var dom_table = $('#data_table');
+    var dom_tbody = dom_table.find('tbody');
+    var dom_tbody_bundle = $('#data_table-bundle').find('tbody');
+    var dom_tbody_handle = $('#data_table-handle').find('tbody');
+    var task_amount = {$data['task_amount']};
+    var task_code = $.trim($('#task_code').html());
+    var allSync = 0;
+    var allUnSync = 0;
+    $('#qr_task').qrcode({width:200,height:200,correctLevel:0,text:task_code});
+    $('#data-no-scan').select().focus();
+    //合计双流同步
+    $('.sync-num').each(function(){
+        allSync += Number($(this).attr('data'));
+    });
+    //合计未双流同步
+    $('.unsync-num ').each(function(){
+        allUnSync += Number($(this).attr('data'));
+    });
+    $('.scan-sum').text(number_format(allSync,2,'.',','));
+    $('.noscan-sum').text(number_format(allUnSync,2,'.',','));
+    //带扫描
+    $('.sync').text(allSync);
+    //enableScanFocus(1,true);
+    dom_pack.on("keypress", function(e){
+        var kc = e.which || e.keyCode;
+        var _hash = '';
+        if(kc == 13){
+            //enableScanFocus(1,false);
+            var thisval = $.trim($(this).val());
+            //兼容捆号和把号
+            var comeType = thisval.substr(0,1);
+            //console.log(thisval);
+            try{
+                var qrdata = JSON.parse(thisval);
+                thisval = qrdata.bc;
+                _hash = qrdata.hash;
+                var am = qrdata.amount;
+                console.log(thisval,_hash,am);
+                if($.trim(thisval) != ''){
+                    $(this).val(thisval);
+                }
+            }catch(e){
+
+            }
+
+            if(_hash == "" || typeof(_hash) == 'undefined'){
+                if(thisval == ""){
+                    layer.msg("请扫描");
+                }else{
+
+//                    if(!(new RegExp("^B[a-zA-Z0-9]{4}[0-9]{10}$")).test(thisval)){
+//                        this.select();
+//                        layer.msg("包号不正确，请重新扫描！");
+//                        dom_pack.html('').val('')
+//                    }else{
+                        if(isDataNoExists(thisval,comeType)){
+                            dom_pack.html('').val('')
+                        }else{
+                            layer.msg("此号不在任务中！");
+                            dom_pack.html('').val('')
+                        }
+                    //}
+                }
+            }else{
+                var code_msg = $.parseJSON($('.pack_code').val());
+                var amount = code_msg.amount;
+                var hash = code_msg.hash;
+                var table = $('#data_table').html();
+                if ( table ){
+                    var tbody = $('#data_table tbody');
+                    var tr = tbody.find('tr');
+                    var pack_l = tr.length;
+                    var pack_arry = [];
+                    for ( var i =0 ; i < pack_l; i++ ){
+                        var back_code = tr.eq(i).attr('data-no');
+                        back_code = back_code.toUpperCase();
+                        pack_arry.push(back_code);
+                    }
+                    pack_arry.sort();
+                    pack_arry = pack_arry.join(',');
+                    var pack_hash = hex_md5(pack_arry).toUpperCase();
+                } else {
+                    return false;
+                }
+                console.log(pack_l);
+                console.log(pack_hash);
+
+                if (amount == pack_l ){
+                    if( hash == pack_hash){
+                        layer.msg('入库信息扫描成功！');
+                        $('.pack_code').html('').val('').select().focus();
+                        $('.sync-scan').html($('.sync').html());
+                        $('#do-pack-btn').removeClass('layui-btn-disabled');
+                        $('#data_table tbody tr').each(function(){
+                            $(this).addClass('bg_green');
+                            $(this).find('.status').html('已扫描');
+                        })
+                        $.post("__ROOT__/api/bank/in_room",
+                            {
+                                task_code: task_code
+                            }, function(result){
+                                if(result && result.err_code == 0){
+                                    layer.msg("提交成功");
+                                    setTimeout(function() {
+                                        location.href = "__ROOT__/admin/task/index.html?_t="+(new Date().getTime());
+                                    }, 500);
+                                }else{
+                                    return layer.msg("提交失败，"+result.err_msg);
+                                }
+                            },'json');
+                    }else{
+                        layer.msg('二维码信息与任务信息不符！');
+                        $('.pack_code').html('').val('').select().focus();
+                        return false;
+                    }
+                }else{
+                    layer.msg('二维码信息与任务信息不符！');
+                    $('.pack_code').html('').val('').select().focus();
+                    return false;
+                }
+
+            }
+            //console.log(thisval,_hash);
+            //enableScanFocus(1,true)
+            $('#data-no-scan').select().focus();
+
+        }
+
+    });
+    function number_change(aol,amount){
+        var amount_sum = parseInt(dom_amount_sum.attr('data-amount'));
+        var pack_num = parseInt(dom_pack_num.text());
+        if(aol == 1){
+            amount_sum = parseInt(amount_sum) + amount;
+            pack_num = parseInt(pack_num) + 1;
+        }else if(aol == 2){
+            amount_sum = parseInt(amount_sum) - amount;
+            pack_num = parseInt(pack_num) - 1;
+        }
+        dom_amount_sum.attr('data-amount',amount_sum);
+        dom_amount_sum.text(number_format(amount_sum,2,'.',','));
+        dom_pack_num.text(pack_num);
+    }
+    var t = 0;
+    function menu_change(comeType){
+        //兼容捆号和把号
+        if (comeType == 'B') {
+            var tr = dom_tbody.find('.bg_green');
+        }else if (comeType == 'K') {
+            var tr = dom_tbody_bundle.find('.bg_green');
+        }else if (comeType == 'H') {
+            var tr = dom_tbody_handle.find('.bg_green');
+        }
+        
+        tr.each(function(){
+            if (!$(this).hasClass('isTrue')) {
+                var i = $(this).find('td').eq(2).attr('data');
+                t += Number(i);
+            }
+            //记录已经加过
+            $(this).addClass('isTrue');
+        })
+        $('.sync-scan').text(number_format(t,2,'.',','));
+        btnclick(comeType);
+    }
+    // 提交可点
+    function btnclick(comeType){
+        var totalnum = parseInt(task_amount);
+        var scannum = $('.sync-scan').text();
+        // var othernum = $('.othernum').html()*10000;
+        // var unnum = (totalnum - scannum - othernum)/10000;
+        if (number_format(totalnum,2,'.',',') == scannum) {
+           $('#do-pack-btn').removeClass('layui-btn-disabled'); 
+        }
+        $('.unnum').html(unnum);
+        //$('#do-pack-btn').removeClass('layui-btn-disabled');
+
+        var sure_num = 0;
+        //兼容捆号和把号
+        dom_tbody.find('tr').each(function(i, item){
+            if (!$(this).hasClass("bg_green")) {
+                sure_num++;
+            }
+        });
+        dom_tbody_bundle.find('tr').each(function(i, item){
+            if (!$(this).hasClass("bg_green")) {
+                sure_num++;
+            }
+        });
+        dom_tbody_handle.find('tr').each(function(i, item){
+            if (!$(this).hasClass("bg_green")) {
+                sure_num++;
+            }
+        });
+        // console.log(sure_num)
+        // if(sure_num == 0){
+        //     $('#do-pack-btn').removeClass('layui-btn-disabled');
+        // }
+
+        // var tr = $('#data_table').find('tbody').find('tr')
+        // if(tr){}
+        // $('.unnum').html(unnum);
+    }
+
+    dom_tbody.on("click", "a.delete", function(){
+        var thisobj = $(this);
+        var dataNo = $.trim(thisobj.parents("tr[data-no]").attr("data-no"));
+        var index = layer.confirm("确定取消["+dataNo+"]吗？", function(){
+            thisobj.parents("tr[data-no]").remove();
+            var amount = $.trim(thisobj.parents("tr[data-no]").attr("data-amount"));
+            number_change(2,amount);
+            layer.close(index);
+        });
+    });
+    //扫描框获取焦点
+    function enableScanFocus(elemNo, flag){
+        var elemId = "";
+
+        //捆
+        if(elemNo == 1){
+            elemId = "data-no-scan";
+        }
+        //包
+        else if(elemNo == 2){
+            elemId = "pack-code-scan";
+        }
+
+        $("#"+elemId).unbind("blur").blur();
+
+        //绑定blur事件
+        if(flag){
+            $("#"+elemId).bind("blur", function(){
+                $(this).focus().select();
+            }).focus().select();
+        }
+    }
+    //检查捆号是否已扫描
+    function isDataNoExists(dataNo,comeType){
+        var isExists = false;
+        //兼容捆号和把号
+        if (comeType == 'B') {
+            var dataRows = dom_tbody.find("tr");
+        }else if (comeType == 'K') {
+            var dataRows = dom_tbody_bundle.find("tr");
+        }else if (comeType == 'H') {
+            var dataRows = dom_tbody_handle.find("tr");
+        }
+        if(dataRows.length > 0){
+            dataRows.each(function(i, item){
+                var rowDataNo = $.trim($(this).attr("data-no"));
+                if(dataNo == rowDataNo){
+                    isExists = true;
+                    if ($(this).hasClass("bg_green")) {
+                        layer.msg("此号已扫描，请勿重复扫描！");
+                    }else{
+                        $(this).addClass('bg_green');
+                        $(this).find('.status').html('已扫描');
+                        number_change(1,parseInt($(this).attr('data-amount')));
+                        
+                        //兼容捆号和把号
+                        if (comeType == 'B') {
+                            dom_tbody.append($(this).clone());
+                        }else if (comeType == 'K') {
+                            dom_tbody_bundle.append($(this).clone());
+                        }else if (comeType == 'H') {
+                            dom_tbody_handle.append($(this).clone());
+                        }
+                        $('.pack_code').html('').val('').select().focus();
+                        $(this).remove();
+                        //console.log('is this!')
+                        menu_change(comeType);
+                    }
+                    return false;
+                }
+            });
+        }
+        return isExists;
+    }
+    $('#do-pack-btn').click(function () {
+        if ($(this).hasClass("layui-btn-disabled")) {
+            return false;
+        }
+        var sure_num = 0;
+        dom_tbody.find('tr').each(function(i, item){
+            if (!$(this).hasClass("bg_green")) {
+                sure_num++;
+            }
+        });
+        if(sure_num > 0){
+            return layer.msg("提交失败，检测到有未扫描的数据。");
+        }
+
+        var index = layer.confirm("确定提交吗？",function(){
+            var load = layer.load();
+            $.post("__ROOT__/api/bank/in_room",
+                {
+                    task_code: task_code
+                }, function(result){
+                    layer.close(load);
+                    if(result && result.err_code == 0){
+                        //layer.close(index);
+                        layer.msg("提交成功");
+                        setTimeout(function() {
+                            location.href = "__ROOT__/admin/task/index.html?_t="+(new Date().getTime());
+                        }, 500);
+                    }else{
+                        return layer.msg("提交失败，"+result.err_msg);
+                    }
+                },'json');
+            layer.close(index);
+        });
+    });
+    function valutavalue(){
+        var t = 0;
+        $('#valutatable tbody tr').each(function(){
+            //console.log($(this).find('td').eq(2).html())
+            t += Number($(this).find('td').eq(2).html())
+        })
+        //console.log(t)
+        $('#valutavalue').html(t);
+        $('#allprice').html(t);
+        //console.log(t)
+    }
+    valutavalue();
+</script>
+{/block}

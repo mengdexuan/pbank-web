@@ -1,0 +1,115 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <div class="title-box" style="margin: 10px 0;">
+                <div class="title">库存概览</div>
+            </div>
+            <div class="layui-inline" style="height: 32px;">
+                <label class="layui-form-label" style="text-align:left;margin-right: -53px;">单位：</label>
+                <div class="layui-input-inline">
+                    <select class="layui-input" style="cursor: pointer;" id="doConversion">
+                        <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元</option>
+                        <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-tab-item layui-show">
+                <table class="new-table" id="data_table">
+                    <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>商行名称</th>
+                        <th class="txtR p-r-20">库存金额</th>
+                        <th>库存包量</th>
+                        <th>最后统计时间</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="low">
+                            <td colspan="5" class="text-center">查询中</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="page_box"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    function search(curr){
+        layer.load(2);
+        var url = "__ROOT__/api/bank/query_work_store";
+        var op = {
+            cur_page: curr || 1
+        };
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var work_stores = data.work_stores;
+            var html_str = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < work_stores.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td>"+(i+1)+"</td>";
+                    html_str = html_str + "<td>"+work_stores[i].bank_str+"</td>";
+                    html_str = html_str + "<td class='txtR p-r-20 doVersionOne' number="+work_stores[i].pack_amount_str+">"+work_stores[i].pack_amount_str+"</td>";
+                    html_str = html_str + "<td>"+work_stores[i].pack_cnt+"</td>";
+                    html_str = html_str + "<td>"+work_stores[i].op_time+"</td>";
+                    html_str = html_str + '</tr>';
+                }
+                $('.pack_cnt').html(data.pack_cnt);
+                $('.pack_sum').html(number_format(data.pack_sum,2,'.',','));
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                html_str = '<tr class="low"><td colspan="5" class="text-center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="location=location">刷新</a></td></tr>';
+            }
+                $('#data_table').find('tbody').html(html_str);
+                $('#data_table').find('tbody').hide();
+                $('#data_table').find('tbody').fadeIn(500);
+                $("#doConversion").trigger("change");
+        });
+    }
+    //运行
+    search();
+    //元万元亿切换
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+
+        $('.doVersionOne').each(function(i,e){
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+            
+            $(this).text(numberNew);                
+        });
+    });
+</script>
+{/block}

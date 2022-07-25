@@ -1,0 +1,251 @@
+{extend name="base" /}
+{block name="body"}
+<style>
+    .new-table thead tr th, .new-table tbody tr td {
+        line-height: normal;
+    }
+    .new-table thead tr th:last-child, .new-table tbody tr td:last-child {
+        padding-right: 18px;
+        text-align: center;
+    }
+    .add,
+    .delete {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        margin-left: 5px;
+        border-radius: 10px;
+        line-height: 20px;
+        background: #ccc;
+        font-size: 20px;
+        color: #fff;
+        text-align: center;
+        cursor: pointer;
+        font-weight: normal;
+    }
+    .add {
+        background: #63d063;
+    }
+    .delete {
+        background: #ccc;
+    }
+    input {
+        width: 80%;
+        height: 30px;
+        margin-bottom: 3px;
+        line-height: 30px;
+        border: 1px solid #ccc;
+        border-radius: 2px;
+        text-indent: 5px;
+        border: none;
+        background: transparent;
+    }
+    .edit,
+    .save,
+    .cancel {
+        display:inline-block;
+        display: none;
+        float: right;
+        margin-left: 20px;
+    }
+    .edit {
+        display: block;
+    }
+    .cancel {
+        background: #ccc;
+    }
+</style>
+<div class="layui-body">
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <div class="title-box">
+                <div class="title" style="display:inline-block;">清分机设置</div>
+                <button class="layui-btn layui-btn-small save">保存</button>
+                <button class="layui-btn layui-btn-small cancel">取消</button>
+                <button class="layui-btn layui-btn-small edit">编辑</button>
+            </div>
+            <table class="new-table" id="new-table">
+                <thead>
+                <tr>
+                    <th style="width:10%">序号</th>
+                    <th style="width:30%">商行名称</th>
+                    <th style="width:10%">显示顺序</th>
+                    <th style="width:30%">清分机 品牌 / 型号</th>
+                    <th style="width:20%">清分机数量</th>
+                </tr>
+                </thead>
+                <tbody>
+                    {volist name="data" id="vo"}
+                    <tr class="data-tr" data="{$vo['bank_code']}">
+                        <td>{$key+1}</td>
+                        <td>{:getBankNameByCode($vo['bank_code'])}</td>
+                        <td><input type="number" class="sort" value="{$vo['sorted_index']}"></td>
+                        <td class="info">
+                            {volist name="vo['sorted_machines']" id="v"}
+                            {if $i == 1}
+                            <input type="text" class="device" value="{$v['device']}" data="{$i}"><span class="add">+</span>
+                            {else}
+                            <br data="{$i}"><input type="text" class="device" value="{$v['device']}" data="{$i}"><b class="delete" data="{$i}">×</b>
+                            {/if}
+                            {/volist}
+                        </td>
+                        <td class="numtr">
+                            {volist name="vo['sorted_machines']" id="v"}
+                            {if $i == 1}
+                            <input type="number" class="num" value="{$v['number']}" data="{$i}">
+                            {else}
+                            <br data="{$i}"><input type="number" class="num" value="{$v['number']}" data="{$i}">
+                            {/if}
+                            {/volist}
+                        </td>
+                    </tr>
+                    {/volist}
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+    $(function(){
+        /* 默认不可编辑 */
+        $('input').each(function(){
+            $(this).attr('readonly','readonly');
+            $('.add').hide();
+            $('.delete').hide();
+        })
+        /* 添加 */
+        $('.add').each(function(){
+            $(this).click(function(){
+                var l = $(this).parent('td').find('input').length;
+                var new_l = Number(l) + 1;
+                $(this).parent('td').append('<br data="' + new_l + '"><input type="text" class="device" style="border:1px solid #ccc;" data="' + new_l + '"><b class="delete" data="' + new_l + '">×</b>');
+                $(this).parent('td').next('td').append('<br><input type="number" class="num" style="border:1px solid #ccc;" data="' + new_l + '">');
+
+                $('.delete').click(function(){
+                    var data = $(this).attr('data');
+                    var input = $(this).parent('td').parent('tr').find('.numtr').children('input');
+                    var br = $(this).parent('td').parent('tr').find('.numtr').children('br');
+                    var input_l = input.length;
+                    for(var i = 0; i < input_l; i++ ){
+                        var new_data = $(input).eq(i).attr('data');
+                        if( data == new_data ){
+                            $(input).eq(i).remove();
+                            $(br).eq(i-1).remove();
+                        }
+                    }
+
+                    var input2 = $(this).parent('td').parent('tr').find('.info').children('input');
+                    var br2 = $(this).parent('td').parent('tr').find('.info').children('br');
+                    var b2 = $(this).parent('td').parent('tr').find('.info').children('b');
+                    var input_l2 = input2.length;
+                    for(var i = 0; i < input_l2; i++ ){
+                        var new_data2 = $(input2).eq(i).attr('data');
+                        if( data == new_data2 ){
+                            $(input2).eq(i).remove();
+                            $(br2).eq(i-1).remove();
+                            $(b2).eq(i-1).remove();
+                        }
+                    }
+                })
+            })
+        })
+
+        /* 删除 */
+        $('.delete').click(function(){
+            var data = $(this).attr('data');
+            var input = $(this).parent('td').parent('tr').find('.numtr').children('input');
+            var br = $(this).parent('td').parent('tr').find('.numtr').children('br');
+            var input_l = input.length;
+            for(var i = 0; i < input_l; i++ ){
+                var new_data = $(input).eq(i).attr('data');
+                if( data == new_data ){
+                    $(input).eq(i).remove();
+                    $(br).eq(i-1).remove();
+                }
+            }
+
+            var input2 = $(this).parent('td').parent('tr').find('.info').children('input');
+            var br2 = $(this).parent('td').parent('tr').find('.info').children('br');
+            var b2 = $(this).parent('td').parent('tr').find('.info').children('b');
+            var input_l2 = input2.length;
+            for(var i = 0; i < input_l2; i++ ){
+                var new_data2 = $(input2).eq(i).attr('data');
+                if( data == new_data2 ){
+                    $(input2).eq(i).remove();
+                    $(br2).eq(i-1).remove();
+                    $(b2).eq(i-1).remove();
+                }
+            }
+        })
+
+        /* 保存设置 */
+        $('.save').click(function(){
+            var l = $('.data-tr').length;
+            var result = '';
+            for(var i = 0; i < l; i++ ){
+                var bank_code = $('.data-tr').eq(i).attr('data');
+                var sorted_index = $('.data-tr').eq(i).find('.sort').val();
+                if(!sorted_index){
+                    sorted_index = 0;
+                }
+                var sorted_machines = '';
+                var device_l = $('.data-tr').eq(i).find('.device').length;
+                for ( var j = 0; j < device_l; j++ ){
+                    var d = $('.data-tr').eq(i).find('.device').eq(j).val();
+                    var m = $('.data-tr').eq(i).find('.num').eq(j).val();
+                    if(!m){
+                        m = 0;
+                    }
+                    sorted_machines += '{"device":"'+d+'","number":'+m+'},'
+                }
+                sorted_machines = '[' + sorted_machines + ']';
+                sorted_machines = sorted_machines.replace(",]","]");
+                result += '{"bank_code": "'+bank_code+'","sorted_index": '+sorted_index+',"sorted_machines": '+sorted_machines+'},';
+                //console.log(result)
+            }
+            result = '['+result+']';
+            result = result.replace(",]","]");
+            console.log(result);
+            $.ajax({
+                url: '__ROOT__/api/bank/add_sorted_machine',
+                data:{
+                    machines: result
+                },
+                type: "post",
+                data_type:'json',
+                success: function (info) {
+                    if (info.err_code == 0) {
+                        layer.msg('设置成功！');
+                        document.location.reload();
+                    }else {
+                        layer.msg(info.err_msg);
+                    }
+                }
+            });
+        })
+
+        /* 编辑 */
+        $('.edit').click(function(){
+            $(this).hide();
+            $('.cancel').show();
+            $('.save').show();
+            $('input').each(function(){
+                $(this).removeAttr('readonly','readonly');
+                $(this).css('border','1px solid #ccc');
+            })
+            $('.add').show();
+            $('.delete').show();
+        })
+
+        /* 取消 */
+        $('.cancel').click(function(){
+            document.location.reload();
+        })
+
+    })
+</script>
+{/block}

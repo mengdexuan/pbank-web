@@ -1,0 +1,237 @@
+{extend name="base" /}
+{block name="body"}
+<style>
+
+    .layui-form-label {
+        width: 78px;
+        padding: 7px 0px;
+        text-align: center;
+    }
+    .layui-input-block {
+        margin-left: 78px;
+    }
+
+    .m-t-20 {
+        margin-top: 20px !important;
+    }
+    #noticeId {
+        display: none;
+    }   
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <span class="layui-breadcrumb">
+                <a href="{:url('admin/notice/index')}">公告列表</a>
+                <a><cite>公告修改</cite></a>
+            </span>
+            {if $data}
+            <div class="layui-tab layui-tab-brief" lay-filter="docDemoTabBrief">
+                <ul class="layui-tab-title">
+                    <li class="layui-this">文本调整</li>
+                    <li>添加附件</li>
+                    {if count($data['enclosures']) > 0}
+                    <li>删除附件</li>
+                    {/if}
+                </ul>
+                <div class="layui-tab-content">
+                    <div id="noticeId">{$data.announcementId}</div>
+                    <div class="layui-tab-item m-t-20 layui-show">
+                        <form class="layui-form form-container" id="uploadForm">
+                            <input type="hidden" name="announcementId" lay-verify="required" placeholder="请输入程序名称" autocomplete="off" class="layui-input" value="{$data.announcementId}">
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">公告标题</label>
+                                <div class="layui-input-block">
+                                    <input type="text" name="title" lay-verify="required" placeholder="请输入公告标题" autocomplete="off" class="layui-input" value="{$data.title}">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">公告内容</label>
+                                <div class="layui-input-block">
+                                    <textarea type="text" name="content" lay-verify="required" placeholder="请输入公告内容" autocomplete="off" class="layui-textarea" value="{$data.content}">{$data.content}</textarea>
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <div class="layui-input-block">
+                                    <button class="layui-btn" id="modify-btn">保存</button>
+                                    <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="layui-tab-item m-t-20">
+                        {if count($data['enclosures']) > 0}
+                        <div>
+                            <div class="info-item">
+                                <div class="info-inline">
+                                    <label class="info-label">公告附件</label>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                {volist name="data['enclosures']" id="vo"  }
+                                <div>
+                                    <div class="info-inline">
+                                        <label class="info-label">附件ID</label>
+                                        <div class="info-text">{$vo.id}</div>
+                                    </div>
+                                    <div class="info-inline">
+                                        <label class="info-label">公告附件名称</label>
+                                        <div class="info-text" style="width: 700px;">{$vo.enclosureName}</div>
+                                    </div>
+                                </div>
+                                {/volist}
+                            </div>
+                        </div>
+                        {/if}
+                        <form class="layui-form form-container" id="adddForm" enctype="multipart/form-data" action="{:url('/api/bank/add_notice_file')}" method="post">
+                            <div class="layui-form-item">
+                                <div class="info-inline" style="display:none;">
+                                    <label class="info-label">公告编号</label>
+                                    <div class="info-text">
+
+                                        <input type="text" name="announcementId" lay-verify="required" placeholder="请输入公告编号" autocomplete="off" class="layui-input" value="{$data.announcementId}">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">添加附件</label>
+                                <div class="layui-input-inline">
+                                    <input type="file" name="files" id="files" lay-type="file" class="">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <div class="layui-input-block">
+                                    <button class="layui-btn" lay-submit lay-filter="*">保存</button>
+                                    <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="layui-tab-item  m-t-20">
+                        {if count($data['enclosures']) > 0}
+                        <div>
+                            <div class="info-item">
+                                <div class="info-inline">
+                                    <label class="info-label">公告附件</label>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                {volist name="data['enclosures']" id="vo"  }
+                                <div style="padding:5px;border-bottom: 1px solid #eee">
+                                    <div class="info-inline">
+                                        <label class="info-label">附件ID</label>
+                                        <div class="info-text">{$vo.id}</div>
+                                    </div>
+                                    <div class="info-inline">
+                                        <label class="info-label">公告附件名称</label>
+                                        <div class="info-text" style="width: 700px;">{$vo.enclosureName}</div>
+                                    </div>
+                                    <div class="delete-btn layui-btn" style="float:right;" data="{$vo.id}">删除</div>
+                                </div>
+                                {/volist}
+                            </div>
+                        </div>
+                        {/if}
+                    </div>
+                </div>
+            </div>
+            {/if}
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    /*修改公告*/
+    $('#modify-btn').click(function(){
+        //console.log('enter!');
+        var announcementId = $('#noticeId').html();
+        var title = $('input[name="title"]').val();
+        var content = $('textarea[name="content"]').val();
+        layer.open({
+            shade: false,
+            content: '确定修改该公告？',
+            btn: ['确定', '取消'],
+            yes: function (index) {
+                $.ajax({
+                    url: '__ROOT__/api/bank/eidt_notice_file',
+                    data:{
+                        announcementId: announcementId,
+                        title: title,
+                        content: content
+                    },
+                    type: "post",
+                    success: function (info) {
+                        if (info.err_code === 0) {
+                            info.err_msg = '修改成功';
+                            setTimeout(function () {
+                                location.href = info.url;
+                            }, 1000);
+                        }
+                        layer.msg(info.err_msg);
+                    }
+                });
+                layer.close(index);
+            }
+        });
+        return false;
+    });
+    // 添加附件
+
+    form.on('submit(*)', function(data){
+        var formData = new FormData($( "#adddForm" )[0]);
+        $.ajax({
+            url: data.form.action,
+            type: 'POST',
+            data: formData,
+            async: false,
+            cache: false,
+            contentType: false,
+            processData: false,
+            success: function (info) {
+                if (info.err_code == 0) {
+                    setTimeout(function () {
+                        location.href = info.url;
+                    }, 1000);
+                    info.err_msg = '提交成功'
+                }
+                layer.msg(info.err_msg);
+                location.href = info.url;
+            }
+        });
+        return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+    });
+
+    
+    /*删除附件*/
+    $('.delete-btn').each(function(){
+        $(this).click(function(){
+            var enclosureId = $(this).attr('data');
+            layer.open({
+                shade: false,
+                content: '确定删除该附件？',
+                btn: ['确定', '取消'],
+                yes: function (index) {
+                    $.ajax({
+                        url: '__ROOT__/api/bank/remove_notice_file',
+                        data:{enclosureId:enclosureId},
+                        type: "post",
+                        success: function (info) {
+                            if (info.err_code === 0) {
+                                info.err_msg = '删除成功';
+                                setTimeout(function () {
+                                    location.href = info.url;
+                                }, 1000);
+                            }
+                            layer.msg(info.err_msg);
+                        }
+                    });
+                    layer.close(index);
+                }
+            });
+            return false;
+        })
+    })
+</script>
+{/block}

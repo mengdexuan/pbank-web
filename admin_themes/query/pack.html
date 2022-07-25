@@ -1,0 +1,173 @@
+{extend name="base" /}
+{block name="body"}
+<style type="text/css">
+    .right-box{
+        float: left;
+    }
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <input type="hidden" value="{$pack_code}" class="pack_code">
+            <input type="hidden" value="{$task_code}" class="task_code">
+            <span class="layui-breadcrumb">
+            <a href="{:url('admin/task/index')}">调拨任务概览</a>
+            <a href="{:url('admin/task/view_task',['task_code'=>$task_code])}">任务详情</a>
+            <a><cite>任务中的包</cite></a>
+            </span>
+            <br>
+            <div class="title-box" style="margin: 10px 220px 10px 0;display:inline-block">
+                <div class="title">包号 {$pack_code}</div>
+            </div>
+            {if $data}
+            <!--<div class="layui-form-item" style="margin: 10px 0;display:inline-block">
+                <a class="layui-btn layui-btn-normal layui-btn-small" href="{:url('admin/task/download_pack_file',['pack_code'=>$data['pack_code']])}">下载对应的GZH文件</a>
+            </div>-->
+            {/if}
+            <div class="info-item">
+                <div class="info-inline m-r-48">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 金额</label>
+                    <div class="pack-info-text doVersionOne">{:number_format($data['pack_amount'],2,'.',',')}</div>
+                </div>
+                <div class="info-inline m-r-48">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 状态</label>
+                    <div class="pack-info-text">{:get_pack_status($data['pack_status'])}</div>
+                </div>
+                <div class="info-inline m-r-48">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 所属银行</label>
+                    <div class="pack-info-text width-auto">
+                        {if $data['owner_bank'] == get_cur_bank()}
+                        本行
+                        {else}
+                        {:get_bank($data['owner_bank'])}
+                        {/if}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline m-r-48">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 打包人</label>
+                    <div class="pack-info-text">{$data['pack_name']}</div>
+                </div>
+                <div class="info-inline m-r-48">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 打包时间</label>
+                    <div class="pack-info-text">{$data['pack_time']}</div>
+                </div>
+                <div class="info-inline m-r-48">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 打包银行</label>
+                    <div class="pack-info-text width-auto">
+                        {if $data['creator_bank'] == get_cur_bank()}
+                        本行
+                        {else}
+                        {:get_bank($data['creator_bank'])}
+                        {/if}
+                    </div>
+                </div>
+            </div>
+            <div class="pack-box" style="width:{$box_width}px;">
+            </div>
+            <div id="page_box"></div>
+
+        </div>
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+{if $data}
+<script>
+    $('.search').click(function(){
+        search();
+    });
+    function search(curr){
+        layer.load(2);
+        var pack_code = $.trim($('.pack_code').val());
+        var task_code = $.trim($('.task_code').val());
+        var url = "__ROOT__/api/bank/query_pack_task";
+        var op = {
+            cur_page: curr || 1,
+            task_code:task_code,
+            pack_code:pack_code,
+            cur_num: 1000
+        };
+
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var bundles = data.bundles;
+            var modnum = {$box};
+            console.log(modnum);
+            var html_str = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < bundles.length; i++){
+                    if(i%modnum == 0){
+                        if(i == 0){
+                            html_str = html_str + '<div class="right-box">';
+                        }else{
+                            html_str = html_str + '</div><div class="right-box">';
+                        }
+                    }
+                    if(data.pack_status != 1){
+                        html_str = html_str + '<a href="__ROOT__/admin/task/bundle/task_code/'+task_code+'/pack_code/'+pack_code+'/bundle_code/'+bundles[i].bundle_code+'.html">';
+                    }
+                    html_str = html_str + '<div class="pack-info" style="height: 140px;">';
+                    html_str = html_str + '<div class="bank_short">'+bundles[i].creator_bank_short_str+'</div>';
+                    html_str = html_str + '<div class="bank_belong">'+bundles[i].creator_bank_subordinate_str+'</div>';
+                    html_str = html_str + '<div class="bundle_code">'+bundles[i].bundle_code+'</div>';
+                    html_str = html_str + "</div>";
+                    if(data.pack_status != 1){
+                        html_str = html_str + "</a>";
+                    }
+                }
+                if(html_str !=''){
+                    html_str = html_str+'</div>';
+                }
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="window.reload();">刷新</a>';
+            }
+            $('.pack-box').html(html_str);
+            $('.pack-box').hide();
+            $('.pack-box').fadeIn(500);
+        });
+    };
+    //运行
+    search();
+    //鼠标悬停提示特效
+    $(".doVersionOne").hover(function() {
+        openMsg($(this));
+    }, function() {
+        layer.close(subtips);
+    });
+    function openMsg(_this) {
+        var num = doVersionOne(_this);
+        subtips = layer.tips(num, '.doVersionOne',{tips:[1,'#ff6700'],time: 30000});
+    } 
+    // 元万元亿切换
+    function doVersionOne(_this){
+        if (!_this.attr('number')) {
+            _this.attr('number',_this.text());
+        }
+        var numberOld = $.trim(_this.attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+        var numberOld = numberOld.replace(/,/g, "")/10000;
+        if (numberOld >= 1) {
+            var numberNew = number_format(numberOld,2,'.',',') + '万元';
+        }else{
+            var numberNew = numberOld + '万元';
+        }
+        return numberNew;    
+    }
+</script>
+{/if}
+{/block}

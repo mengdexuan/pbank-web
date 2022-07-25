@@ -1,0 +1,43 @@
+{extend name="base" /}
+{block name="css"}
+<link rel="stylesheet" href="__JS__/webuploader/examples/image-upload/style.css">
+{/block}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <ul class="layui-tab-title">
+            <li class="layui-this">上传文件</li>
+        </ul>
+        <div id="wrapper">
+            <div id="container">
+                <!--头部，相册选择和格式选择-->
+
+                <div id="uploader">
+                    <div class="queueList">
+                        <div id="dndArea" class="placeholder">
+                            <div id="filePicker"></div>
+                            <p></p>
+                        </div>
+                    </div>
+                    <div class="statusBar" style="display:none;">
+                        <div class="progress">
+                            <span class="text">0%</span>
+                            <span class="percentage"></span>
+                        </div><div class="info"></div>
+                        <div class="btns">
+                            <div id="filePicker2"></div><div class="uploadBtn">开始上传</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="js"}
+<script src="__JS__/require.js" data-main="__JS__/app.js"></script>
+{/block}
+{block name="script"}
+
+{/block}}

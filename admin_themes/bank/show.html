@@ -1,0 +1,137 @@
+{extend name="base" /}
+{block name="css"}
+<style>
+    .info-item .info-inline .info-label{
+        text-align: right;
+        margin-right: 15px;
+    }
+</style>
+{/block}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+        <span class="layui-breadcrumb">
+            <a href="{:url('admin/bank/index')}">商行列表</a>
+            <a><cite>{$bank}</cite></a>
+        </span>
+            {if $data}
+            <div class="info-item" style="margin-top: 20px">
+                <div class="info-inline">
+                    <label class="info-label">银行编码</label>
+                    <div class="info-text">
+                        {$data['bank_code']}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">父编码</label>
+                    <div class="info-text">
+                        {$data['parent_code']}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">商行名称</label>
+                    <div class="info-text">
+                        {$data['buss_name']}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">商行简称</label>
+                    <div class="info-text">
+                        {$data['bank_short_name']}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">分行名称</label>
+                    <div class="info-text">
+                        {$data['bank_subordinate']}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">分行全称</label>
+                    <div class="info-text">
+                        {$data['bank_name']}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">银行公钥</label>
+                    <div class="info-text">
+                        {$data['p_key']}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">银行编码加密</label>
+                    <div class="info-text">
+                        {$data['bank_des']}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">银行英文全称</label>
+                    <div class="info-text">
+                        {$data['bank_eng_name']}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">银行英文简称</label>
+                    <div class="info-text">
+                        {$data['bank_eng_short_name']}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">银行logo</label>
+                    <div class="info-text">
+                        <img src="{$data['bank_logo']}" />
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">拼音</label>
+                    <div class="info-text">
+                        {$data['bank_py']}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">银行类型</label>
+                    <div class="info-text">
+                        {if $data['bank_type'] == 0}
+                        开户行
+                        {elseif $data['bank_type'] == 1}
+                        非开户行
+                        {/if}
+                    </div>
+                </div>
+            </div>
+
+            {else}
+            <p style="margin-top: 20px;">无银行信息</p>
+            {/if}
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+{/block}

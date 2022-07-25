@@ -1,0 +1,128 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="title-box">
+            <div class="title">创建任务</div>
+        </div>
+        <div class="layui-tab-content">
+            <div class="layui-tab-item layui-show">
+                <form class="layui-form form-container" action="{:url('/api/bank/create_task')}" method="post">
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">时间</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="task_time" value="" required lay-verify="date" placeholder="请选择任务时间" id="LAY_demorange_s" class="laydate-icon layui-input" style="height: 38px;line-height: 38px;">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">调出行</label>
+                        <div class="layui-input-block">
+                            <select id="out_bank" name="out_bank" lay-verify="required" lay-filter="out">
+                                <option value="">请选择调出行</option>
+                                {foreach name="banks" item="vo" }
+                                <option value="{$key}">{$vo}</option>
+                                {/foreach}
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">调入行</label>
+                        <div class="layui-input-block">
+                            <select id="in_bank" name="in_bank" lay-verify="required" lay-filter="in">
+                                <option value="">请选择调入行</option>
+                                {foreach name="banks" item="vo" }
+                                <option value="{$key}">{$vo}</option>
+                                {/foreach}
+
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">类型</label>
+                        <div class="layui-input-block">
+                            <input type="radio" name="task_type" class="payment-type" value="0" title="交取款" checked>
+                            <input type="radio" name="task_type" class="payment-type" value="1" title="上交残损券">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">金额</label>
+                        <div class="layui-input-inline">
+                            <input type="number" min="0.1" name="task_amount" lay-verify="required" placeholder="请输入金额" autocomplete="off" class="layui-input">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux">万</div>
+                    </div>
+                    <div class="layui-form-item">
+                        <div class="layui-input-block">
+                            <button class="layui-btn" lay-submit lay-filter="*">保存</button>
+                            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    var start = {
+        min: laydate.now()
+        ,max: '2099-06-16 23:59:59'
+        ,istoday: false
+        ,choose: function(datas){
+        }
+    };
+    console.log($('#out_bank'))
+    $('#out_bank').click(function(){
+        //options = $("#out_bank option:selected");
+        console.log('ceshi')
+        //console.log($(this).val())
+    })
+    document.getElementById('LAY_demorange_s').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    }
+    form.on('submit(*)', function(data){
+        var cbank_code = "{:get_cur_bank();}";
+
+        if(data.field.in_bank == data.field.out_bank){
+            layer.msg('调出行与调入行不能相同！');
+            return false;
+        }
+        if(data.field.out_bank == cbank_code && data.field.task_type == "1"){
+            layer.msg('人民银行不可上交残损券！');
+            return false;
+        }
+        if(data.field.in_bank != cbank_code && data.field.task_type == "1"){
+            layer.msg('残损券只能上交到人民银行！');
+            return false;
+        }
+/*        if(parseInt(data.field.task_amount)%200 != 0){
+            layer.msg('金额只能是200的倍数！');
+            return false;
+        }*/
+        if( data.field.task_amount <= 0.1){
+            layer.msg('金额需大于0.1！');
+            return false;
+        }
+        $.ajax({
+            url: data.form.action,
+            type: data.form.method,
+            data: $(data.form).serialize(),
+            success: function (info) {
+                if (info.err_code == 0) {
+                    setTimeout(function () {
+                        location.href = info.url;
+                    }, 1000);
+                    info.err_msg = '提交成功'
+                }
+                layer.msg(info.err_msg);
+            }
+        });
+
+        return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+    });
+</script>
+{/block}

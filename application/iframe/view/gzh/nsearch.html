@@ -1,0 +1,149 @@
+<!--
+Created Date: Thursday April 26th 2018 7:17:29 pm
+Author: haiyue
+-----
+Last Modified:Thursday April 26th 2018 7:17:29 pm
+Modified By: haiyue
+-----
+Copyright (c) 2018 MagCloud
+-->
+{extend name="base" /}
+{block name="body"}
+
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <div class="title-box">
+                <div class="title">冠字号查询</div>
+            </div>
+            <form class="layui-form layui-form-pane" id="pack_form" action="" >
+                <div class="layui-form-item">
+                    <label class="layui-form-label">冠字号</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="code" autocomplete="off" placeholder="" value="{$code}" class="layui-input gzh_code">
+                    </div>
+                    <div class="layui-input-inline">
+                        <button type="" e="button" class="layui-btn layui-btn-small search" lay-submit lay-filter="search">查询</button>
+                    </div>
+                </div>
+            </form>
+            <div class="layui-tab-item layui-show">
+
+                <table class="new-table" id="data_table" style="display: none">
+                    <thead>
+                    <tr>
+                        <th>把号</th>
+                        <th>冠字号</th>
+                        <th>面值</th>
+                        <th>版别</th>
+                        <th>最后流转时间</th>
+                        <th>所属银行</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td colspan="6" class="text-center">查询中</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div id="page_box"></div>
+            </div>
+        </div>
+    </div>
+
+<input type="text" id="bank_code" value="{$bank_code}" style="display: none;">
+{/block}
+
+{block name="script"}
+<script>
+    $('.search').click(function(){
+        search();
+    });
+    function search(curr){
+        layer.load(2);
+        var gzh_code = $.trim($('.gzh_code').val());
+        var url = "__ROOT__/api/bigdata/gzh_search";
+        var _bankCode = $('#bank_code').val();
+        var handData = $('input[name="code"]').val();
+        var op = {
+            page: curr || 1,
+            code:gzh_code,
+            handData:handData,
+            limit: 20 //向服务端传的参数，此处只是演示
+        };
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            if(result.err_code == 0){
+                $('#data_table').show();
+                var gzhs = result.data;
+                var html_str = '';
+                for(var i = 0; i < gzhs.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td>"+gzhs[i].handleCode +"</td>";
+                    html_str = html_str + "<td>"+gzhs[i].code +"</td>";
+                    html_str = html_str + "<td>"+gzhs[i].currency +"</td>";
+                    html_str = html_str + "<td>"+gzhs[i].version +"</td>";
+                    html_str = html_str + "<td>"+gzhs[i].update_time +"</td>";
+                    html_str = html_str + "<td>"+gzhs[i].bank_str +"</td>";
+                    html_str = html_str + '<td><a href="__ROOT__/iframe/gzh/record/code/'+gzhs[i].code+'/bank_code/'+_bankCode+'.html" >查看轨迹</a></td>';
+                    html_str = html_str + '<tr>';
+                }
+
+                if(html_str == ''){
+                    html_str = '<td colspan="6" style="text-align: center">暂无数据</td>';
+                }
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: result.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                layer.msg(result.err_msg);
+                //html_str = '<tr><td colspan="5" style="text-align: center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="location = location">刷新</a></td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+        });
+    };
+    //运行
+    var gzh_code = $.trim($('.gzh_code').val());
+    if(gzh_code != ''){
+        search();
+    }
+    //search();
+</script>
+
+<script>
+    var dom_pack = $('.pack_code');
+    dom_pack.on("keypress", function(e){
+        var kc = e.which || e.keyCode;
+        if(kc == 13){
+
+            var thisval = $.trim($(this).val());
+            try{
+                thisval = JSON.parse(thisval).bc;
+                if($.trim(thisval) != ''){
+                    $(this).val(thisval);
+                }
+            }catch(e){
+
+            }
+        }
+    }).focus().select();
+    $('#pack_form').submit(function () {
+        thisval = $.trim(dom_pack.val());
+//        if(!(new RegExp("^B[a-zA-Z0-9]{4}[0-9]{10}$")).test(thisval)){
+//            $("#pack-code-scan").select();
+//            layer.msg('包号格式不正确！');
+//            return false;
+//        }
+    })
+</script>
+{/block}

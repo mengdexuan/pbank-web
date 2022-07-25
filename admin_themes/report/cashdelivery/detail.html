@@ -1,0 +1,179 @@
+{extend name="base" /}
+{block name="body"}
+<style>
+     .data_row input {
+         width: 100%;
+         text-align: right;
+         border: none;
+     }
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <span class="layui-breadcrumb">
+                <a href="{:url('admin/report/index')}">报表列表</a>
+                <a href="{:url('admin/report/list',['reportNum'=>$reportNum])}">{:show_report_name($reportNum)}</a>
+                <a><cite>详情</cite></a>
+            </span>
+
+            <div class="title-box">
+                {$data['year']}年
+                {if $head == 1}
+                <form class="" id="search" action="{:url('admin/report/cash_stock_download',['year'=>$data['year'],'bankCode'=>$bankCode,'reportNum'=>$reportNum])}">
+                    <button class="layui-btn layui-btn-small" id="down">下载报表</button>
+                </form>
+                {else}
+                {/if}
+
+            </div>
+            <table class="layui-table report">
+                <caption>{$data['year']}年{:show_report_name($reportNum)}</caption>
+                <caption class="t-tip">单位：元</caption>
+                <thead>
+                <tr>
+                    <th rowspan="2" width="12.5%">券别</th>
+                    <th width="12.5%">计划年度年初完整券库存</th>
+                    <th width="12.5%">计划年度现金净投放</th>
+                    <th width="12.5%">计划年度次年元旦至春节现金净投放</th>
+                    <th width="12.5%">计划年度残损人民币上缴</th>
+                    <th width="12.5%">计划年度次年元旦至春节残损人民币缴款</th>
+                    <th width="12.5%">取款/缴款计划</th>
+                    <th rowspan="2" width="12.5%">备注</th>
+                </tr>
+                <tr>
+                    <th>(1)</th>
+                    <th>(2)</th>
+                    <th>(3)</th>
+                    <th>(4)</th>
+                    <th>(5)</th>
+                    <th>(8)=(2)+(3)+(4)+(5)-(1)</th>
+                </tr>
+                </thead>
+                <tbody>
+                {volist name="$data['tableData']" id="vo"}
+                <tr class="data_row">
+                    <td class="c"><input type="text" class="rowCode" value="{$vo['rowCode']}" readonly style="display:none;">{:get_report_name($reportNum,$vo['rowCode'])}</td>
+                    <td class="c"><input data-type="2" type="number" min="0" class="fullYearVoucherStock" value="{:number_format($vo['fullYearVoucherStock'],2,'.',',')}" readonly></td>
+                    <td class="c"><input data-type="1" type="number" min="0" class="netCashPy" value="{:number_format($vo['netCashPy'],2,'.',',')}" readonly></td>
+                    <td class="c"><input data-type="1" type="number" min="0" class="netCash" value="{:number_format($vo['netCash'],2,'.',',')}" readonly></td>
+                    <td class="c"><input data-type="1" type="number" min="0" class="damagePaidPy" value="{:number_format($vo['damagePaidPy'],2,'.',',')}" readonly></td>
+                    <td class="c"><input data-type="1" type="number" min="0" class="damagePaid" value="{:number_format($vo['damagePaid'],2,'.',',')}" readonly></td>
+                    <td class="c"><input data-type="" type="number" min="0" class="plan" value="{:number_format($vo['planAmount'],2,'.',',')}" readonly></td>
+                    <td class="c"><input data-type="3" type="text" class="remark" value="{$vo['remark']}" readonly></td>
+                </tr>
+                {/volist}
+                </tbody>
+                <tfoot>
+                <tr>
+                    <td class="c">合计</td>
+                    <td class="fullYearVoucherStockSum"></td>
+                    <td class="netCashPySum"></td>
+                    <td class="netCashSum"></td>
+                    <td class="damagePaidPySum"></td>
+                    <td class="damagePaidSum"></td>
+                    <td class="planSum"></td>
+                    <td class=""></td>
+                </tr>
+                </tfoot>
+            </table>
+
+            {if $head == 1}
+            <div class="title-box">银行列表</div>
+            <div class="layui-tab-item layui-show">
+                <table class="new-table" id="data_table">
+                    <thead>
+                    <tr>
+                        <th>银行</th>
+                        <th>状态</th>
+                        <th>时间</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {volist name="$data['bankList']" id="vo"}
+                    <tr class="low">
+                        <td>{$vo.bankName}</td>
+                        <td {if $vo.fillout == 0}class="red"{/if}>{$vo.filloutType}</td>
+                        <td>{$vo.opTime}</td>
+                        <td>
+                            {if $vo.fillout == 1}
+                            <a href="{:url('/admin/report/cashdelivery_detail',['reportNum'=>$reportNum, 'year'=>$data['year'],'quarter'=>$quarter,'bankCode'=>$vo.bankCode])}">查看详情</a>
+                            {else}
+                            {/if}
+                        </td>
+                    </tr>
+                    {/volist}
+                    </tbody>
+                </table>
+                <div id="page_box"></div>
+            </div>
+            {else}
+            {/if}
+        </div>
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+    $(function() {
+
+        /*自动计算金额*/
+        function setNum(a,t){
+            var num = 0;
+            var class1 = '.'+a;
+            var class2 = '.'+a+'Sum';
+            $(class1).each(function(){
+                /*var value = $(this).val();
+                if(t == 1 || t == 2 ) {
+                    if(value>99999999){
+                        layer.msg('输入的金额过大！');
+                        $(this).val('');
+                        return false;
+                    }
+                    if(value<0){
+                        layer.msg('输入的金额不能小于0！');
+                        $(this).val('');
+                        return false;
+                    }
+                    var length = $(this).val().length;
+                    var first = value.indexOf(".");
+                    if( first>0 && length - first >5 ){
+                        layer.msg('输入的金额过小！');
+                        $(this).val('');
+                        return false;
+                    }
+                }*/
+                num += Number($(this).val()*10000);
+            });
+            $(class2).html(num/10000);
+            if(t == 1 || t == 2 ) {
+                total();
+                setNum('plan');
+            }
+        }
+        /*计算取款计划 plan*/
+        function total(){
+            $('tr').each(function(){
+                var m = 0;
+                var t = $(this).find('input[data-type="1"]');
+                $(t).each(function(){
+                    m += Number($(this).val())
+                });
+
+                var n = $(this).find('input[data-type="2"]').val();
+                $(this).find('.plan').val(Number(m-n));
+            })
+        }
+
+        /*自执行函数---在查看和修改里面需要用*/
+        setNum('fullYearVoucherStock');
+        setNum('netCashPy');
+        setNum('netCash');
+        setNum('damagePaidPy');
+        setNum('damagePaid');
+        setNum('plan');
+    })
+</script>
+{/block}

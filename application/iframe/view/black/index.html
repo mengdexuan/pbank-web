@@ -1,0 +1,506 @@
+{extend name="base" /}
+{block name="body"}
+<style type="text/css">
+    .layui-upload-button{
+        position: relative;
+        display: inline-block;
+        vertical-align: middle;
+        min-width: 60px;
+        height: 33px;
+        line-height: 33px;
+        border: 1px solid #DFDFDF;
+        border-radius: 2px;
+        overflow: hidden;
+        background-color: #fff;
+        color: #666;
+        width: 128px;
+    }
+    .a-upload {  
+        display: inline-block;
+        vertical-align: middle;
+        height: 32px;
+        line-height: 33px;
+        padding: 0 15px;
+        background-color: #009688;
+        color: #fff;
+        white-space: nowrap;
+        text-align: center;
+        font-size: 14px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        opacity: 0.9;
+        filter: alpha(opacity=90);
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+    }  
+    .a-upload  input {  
+        position: absolute;  
+        font-size: 14px;  
+        right: 0;  
+        top: 0;  
+        opacity: 0;  
+        filter: alpha(opacity=0);  
+        cursor: pointer  
+    }  
+</style>
+
+<div class="layui-body" style="top: 87px;left: 0px;">
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <form class="" id="search" action="{:url('iframe/black/index')}"  style="display:inline-block;width:100%;background:#fff;position:fixed;top:45px;padding-top:15px;z-index:1000;" enctype="multipart/form-data" method="post">
+                <div class="layui-form-item">
+                    <div class="layui-input-inline w82">
+                        <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="before">前一天</a>
+                    </div>
+                    <div class="layui-input-inline date-box">
+                        <input type="text" name="beginTime" placeholder="选择开始日期" id="beginTime"  value="{$beginTime}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                    </div>
+                    <div class="layui-input-inline wa date-center">-</div>
+                    <div class="layui-input-inline date-box">
+                        <input type="text" name="endTime" placeholder="选择结束日期" id="endTime"  value="{$endTime}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                    </div>
+                    <div class="layui-input-inline w82">
+                        <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="after">后一天</a>
+                    </div>
+
+                    <div class="layui-input-inline" style="width: 125px;">
+                        <a class="layui-btn layui-btn-small blackDown" href="javascript:;">维护黑名单下载</a>
+                    </div>
+
+                    <div class="layui-input-inline" style="width: 125px;float: left;">
+                        <a class="layui-btn layui-btn-small addUpdate" href="javascript:;">新增</a>
+                    </div>
+                    <div class="layui-input-inline" style="width: 125px;">
+                        <a class="layui-btn layui-btn-small" href="__ROOT__/iframe/black/detail.html?bank_code_param={$bank_code}">监控列表</a>
+                    </div>
+                    <input type="hidden" name="page" value="{$param['page']}">
+                </div>
+
+                <div class="layui-input-inline" style="width: 125px;">
+                    <a href="javascript:;" class="a-upload">  
+                        <input id="file_upload" type="file" name="pic" onchange="fileChange('${base }')" class="upload" />黑名单导入
+                    </a> 
+                      <br/><span style="color: red" id="fileTypeError"></span>　　
+                </div>
+                <br/>
+                <div class="layui-input-inline" style="width: 130px;">
+                    <input type="text" name="seqNo" style="height: 32px;" value="{$param['seqNo']}" placeholder='搜索冠字号' class="layui-input">
+                </div>
+                <div class="layui-input-inline" style="width: 130px;">
+                    <input type="text" name="bankCodeSea" style="height: 32px;" value="{$param['bankCode']}" placeholder='搜索银行编码' class="layui-input">
+                </div>
+                <div class="layui-input-inline" style="width: 130px;">
+                    <button type="submit" class="layui-btn layui-btn-small quick search">查询</button>
+                </div>
+                <input type="hidden" name="bank_code_param" value="{$bank_code}">
+            </form>
+
+            <table class="layui-table" id="data_table" style="margin: 128px 0px;">
+                <thead>
+                <tr>
+                    <th>冠字号码</th>
+                    <th>币值</th>
+                    <th>版别</th>
+                    <th>类型</th>
+                    <th>银行编码</th>   
+                    <th>创建时间</th>   
+                    <th>操作</th>   
+                </tr>
+                </thead>
+                <tbody>
+                {if !empty($res['info'])}
+                <?php foreach ($res['info'] as $k => $v ) { ?>
+                <tr>
+                    <td><?php echo $v['seqNo'];?></td>
+                    <td><?php echo $v['valuta'];?></td>
+                    <td><?php echo $v['ver'];?></td>
+                    <td><?php echo $v['type'];?></td>
+                    <td><?php echo $v['bankName'];?></td>
+                    <td><?php echo date('Y-m-d H:i:s',$v['createTime']/1000);?></td>
+                    <td>
+                        <!-- <a href="{:url('iframe/black/detail',['id'=>'id'])}">查看</a> -->
+                        <!-- <a href="javascript:;" class="addUpdate" data-id='id'>修改</a> -->
+                        {if $bank_code == $v['bankCode']}
+                        <a href="javascript:;" style="color: red;" class="del-delete" data-id="{$v['id']}">删除</a>
+                        {/if}
+                    </td>
+                </tr>
+                <?php } ?>
+                {/if}
+                {if empty($res['info'])}
+                <tr>
+                    <td colspan="7" style="text-align: center;">无数据</td>
+                </tr>
+                {/if}
+                </tbody>
+            </table>
+            <div id="demo1"></div>
+        </div>
+    </div>
+</div>
+
+<!--表单-->
+<div id="form-addUpdate" style="display: none;margin-top: 40px;margin-left: 30px;">
+<form class="layui-form">
+      <div class="layui-form-item">
+        <label class="layui-form-label">冠字号码</label>
+        <div class="layui-input-inline" style="width: 376px;">
+          <input type="text" name="seqNoAdd" required lay-verify="required" placeholder="请输入冠字号码" autocomplete="off" class="layui-input">
+        </div>
+        <div class="layui-form-mid layui-word-aux"></div>
+      </div>
+      <div class="layui-form-item">
+        <label class="layui-form-label">银行编码</label>
+        <div class="layui-input-inline" style="width: 376px;">
+          <input type="text" name="bankCode" required lay-verify="required" autocomplete="off" class="layui-input" id="bankCodeAdd" disabled>
+        </div>
+      </div>
+      <div class="layui-form-item">
+        <label class="layui-form-label">类型</label>
+        <div class="layui-input-inline" style="width: 376px;">
+          <select id="type">
+            {if !empty($resType['data'])}
+                <?php foreach ($resType['data'] as $k=>$v) { ?> 
+                    <option value="{$v['code']}">{$v['name']}</option>
+                <?php } ?>
+            {else}
+            <option value="0">无数据</option>
+            {/if}
+          </select>
+        </div>
+      </div>
+      <div class="layui-form-item">
+        <label class="layui-form-label">币值</label>
+        <div class="layui-input-inline" style="width: 376px;">
+          <select id="valuta">
+            {if !empty($resValuta['data'])}
+                <?php foreach ($resValuta['data'] as $k=>$v) { ?> 
+                    <option value="{$v['code']}">{$v['name']}</option>
+                <?php } ?>
+            {else}
+            <option value="0">无数据</option>
+            {/if}
+          </select>
+        </div>
+      </div>
+      <div class="layui-form-item">
+        <label class="layui-form-label">版别</label>
+        <div class="layui-input-inline" style="width: 376px;">
+          <select id="ver">
+            {if !empty($resVer['data'])}
+                <?php foreach ($resVer['data'] as $k=>$v) { ?> 
+                    <option value="{$v['code']}">{$v['name']}</option>
+                <?php } ?>
+            {else}
+            <option value="0">无数据</option>
+            {/if}
+          </select>
+        </div>
+      </div>
+</div>
+</form>
+<input type="hidden" name="uploadUrl" value="<?php echo config('black_interface_url');?>" id='uploadUrl'> 
+<input type="hidden" name="total" value="<?php echo ceil($res['total']/10);?>"> 
+
+{/block}
+{block name="script"}
+<script type="text/javascript">
+    var uploadUrl = $('input[name="uploadUrl"]').val();
+    //上传
+    function fileChange(base){
+        $("#fileTypeError").html('');
+        var fileName = $('#file_upload').val();　　　　　　　　　　　　　　　　　　
+        var fileType = fileName.substr(fileName.length-4,fileName.length);　　
+        if(fileType=='xlsx'){　　　　　
+               var bank_code = $('input[name="bank_code_param"]').val();
+               var fileObj = document.getElementById("file_upload").files[0]; // js 获取文件对象
+               if (typeof (fileObj) == "undefined" || fileObj.size <= 0) {
+                   layer.msg("请选择文件");
+                   return false;
+               }
+               var formFile = new FormData();
+               formFile.append("action", "UploadVMKImagePath");  
+               formFile.append("file", fileObj); //加入文件对象
+               layer.load(2);
+               $.ajax({
+                   url: "__ROOT__/iframe/black/input_black/bankCode/"+bank_code+'.html',
+                   data: formFile,
+                   type: "Post",
+                   dataType: "json",
+                   cache: false,//上传文件无需缓存
+                   processData: false,//用于对data参数进行序列化处理 这里必须false
+                   contentType: false, //必须
+                   success: function (result) {
+                       layer.msg(result.message);
+                        setTimeout(function(){
+                          location.href = "__ROOT__/iframe/black/index/bank_code_param/"+bank_code+'.html';
+                        }, 1000);
+                   },
+                   error:function(){
+                        layer.msg('error');
+                   }
+               });
+        }else{
+            $("#fileTypeError").html('*上传文件类型错误,支持类型: .xlsx');
+            setTimeout(function(){
+                $("#fileTypeError").html('');
+            },4000);
+        }
+    }
+
+    //下载
+    $('.blackDown').mouseover(function(){
+      var uploadUrl = $('#uploadUrl').val();
+      var seqNo = $('input[name="seqNo"]').val();
+      var bankCode = $('input[name="bankCodeSea"]').val();
+      var page = $('input[name="page"]').val();
+      var beginTime = $('input[name="beginTime"]').val()+' 00:00:00';
+      var endTime = $('input[name="endTime"]').val()+' 23:59:59';
+      $(this).attr('href',uploadUrl+'/blacklist/download?startDateTime='+beginTime+'&endDateTime='+endTime+'&seqNo='+seqNo+'&bankCode='+bankCode+'&page='+page);
+    });
+
+    //搜索
+    $('.search').click(function () {
+        var beginTime = $('#beginTime').val();
+        var endTime = $('#endTime').val();
+        var page = $('input[name="page"]').val();
+        if(get_time(beginTime) >get_time(endTime)){
+            layer.msg('开始时间不能大于结束时间');
+            return false;
+        }
+        if(beginTime == '' && endTime == ''){
+            layer.msg('请选择开始时间与结束时间');
+            return false;
+        }
+    });
+
+    //分页
+    var curr = $('input[name="page"]').val();
+    laypage({
+        cont: 'demo1', 
+        pages: $('input[name="total"]').val(),
+        curr: curr, 
+        jump: function(obj, first){ 
+            $('input[name="page"]').val(obj.curr);
+        }
+    });
+    $('#demo1').find('a').click(function(){
+        $('.search').trigger('click');
+    });
+
+    //删除
+    $('.del-delete').on('click', function () {
+        var id = $(this).attr('data-id');
+        var url = '__ROOT__/iframe/black/del';
+        layer.open({
+            shade: false,
+            content: '确定删除？',
+            btn: ['确定', '取消'],
+            yes: function (index) {
+                doAjax(url,id,'post');
+                layer.close(index);
+            }
+        });
+    });
+
+    //新增和修改
+    $('.addUpdate').on('click', function () {
+        var id = $(this).attr('data-id');
+        var url = '__ROOT__/iframe/black/edit';
+        var bankCode = $('input[name="bank_code_param"]').val();
+        if (id === undefined) {
+            var type = 'add';
+        }else{
+            var type = 'update';
+        }
+        var word ='新增';
+        if (type == 'update') {
+            var word ='修改';
+        }
+        $('#bankCodeAdd').val(bankCode);
+        layer.open({
+            type: 1,
+            title: word,
+            area: ['900px', '550px'],
+            content: $('#form-addUpdate'),
+            btn: ['确定', '取消'],
+            yes: function(){
+                var seqNo = $('input[name="seqNoAdd"]').val();
+                //获取监控黑名单
+                var valuta = $('#valuta option:selected').val();
+                var ver = $('#ver option:selected').val();
+                var bankCode = $('#bankCodeAdd').val();
+                var type = $('#type option:selected').val();
+                if (bankCode == '' || seqNo == '') {
+                    layer.msg('请填写');return false;
+                }
+                //数据
+                var data = 'type,add,bankCode,'+bankCode+',seqNo,'+seqNo+',ver,'+ver+',valuta,'+valuta+',type,'+type;
+                doAjax(url,data,'post');
+            }
+            ,btn2: function(index, layero){
+                $('#form-addUpdate').css({'display':'none'});
+            }
+            ,cancel: function(){
+                $('#form-addUpdate').css({'display':'none'});
+            }
+        });
+    });
+
+    //ajax 请求
+    function doAjax(url,data,method){
+        layer.load(2);
+        $.ajax({
+            url:url,
+            data:{data:data},
+            type:method,
+            dataType:'json',
+            success: function (res) {
+                if (res.err_code > 0) {
+                    layer.msg(res.err_msg);
+                }else{
+                    if (res.message == 'success') {
+                        layer.msg('成功');
+                    }else{
+                        layer.msg(res.message);
+                    }
+                    setTimeout(function(){
+                      $('.search').trigger('click');
+                    }, 2000);
+                    // if (add !== false) {
+                    //    getDetail($('input[name="seqNo"]').val());
+                    //    resetload();
+                    //    return false; 
+                    // }else{
+                        
+                    // }
+                }
+            },
+            error: function (res){
+                layer.msg(res.err_msg);
+            }
+        });  
+    }
+
+    //监控黑名单列表
+    // function getDetail(seqNo=''){
+    //     if (seqNo == '') {
+    //         layer.msg('请填写');return false;
+    //     }
+    //     layer.load(2);
+    //     $.ajax({
+    //         url:'__ROOT__/iframe/black/detail',
+    //         data:{data:seqNo},
+    //         type:'post',
+    //         dataType:'json',
+    //         success: function (res) {
+    //             if (res.err_code > 0) {
+    //                 layer.msg(res.err_msg);
+    //             }else{
+    //                 if (res.errorCode == 0 && res.data.info.length > 0) {
+    //                     $('.layui-word-aux').html('<a href="__ROOT__/iframe/black/detail/data/'+seqNo+'.html">此冠字号已存在，点击查看详情</a>');
+    //                     return true;
+    //                 }else{
+    //                     return false;
+    //                     // layer.msg('此冠字号不在原系统中');
+    //                 }
+    //             }
+    //             resetload();
+    //         },
+    //         error: function (res){
+    //             layer.msg(res.err_msg);
+    //         }
+    //     });  
+    // }
+
+    //取消layer load
+    function resetload(){
+        setTimeout(function(){
+          layer.closeAll('loading');
+        }, 2000);
+    }
+</script>
+<script>
+$(function(){
+    var _type = 'today';
+    var start = {
+        elem:'focus',
+        istoday: true
+    };
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    document.getElementById('endTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    $('.today').click(function () {
+        button_c(this);
+        var date = GetDateStr(0);
+        $('#beginTime').val(date);
+        $('#endTime').val(date);
+        location.href = '__ROOT__/iframe/damaged/index/beginTime/'+date+'/endTime/'+date+'.html';
+    });
+    $('.yesterday').click(function () {
+        button_c(this);
+        var date = GetDateStr(-1);
+        $('#beginTime').val(date);
+        $('#endTime').val(date);
+        location.href = '__ROOT__/iframe/damaged/index/beginTime/'+date+'/endTime/'+date+'.html';
+    });
+    function getDate (str){
+        var y = str.getFullYear();
+        var m = Number(str.getMonth())+1;
+        if(m.toString().length<2){
+            m = '0'+m;
+        }
+        var d = str.getDate();
+        if(d.toString().length<2){
+            d = '0'+d;
+        }
+        var date = y + '-' + m + '-' + d;
+        return date;
+    }
+    $('#before').click(function(){
+        var start = $('#beginTime').val();
+        var end = $('#endTime').val();
+        var curDate = '';
+        if(start!=''){
+            curDate = Date.parse(start);
+        }else if(start == '' && end != ''){
+            curDate = Date.parse(end);
+        }else if(start == '' && end == ''){
+            layer.msg('请选择一个时间点！');
+            return false;
+        }
+        var preDate = new Date(curDate - 24*60*60*1000);
+        $('#beginTime').val(getDate(preDate));
+        $('#endTime').val(getDate(preDate));
+        $('.search').trigger('click');
+    });
+
+    $('#after').click(function(){
+        var start = $('#beginTime').val();
+        var end = $('#endTime').val();
+        var curDate = '';
+        if(end!=''){
+            curDate = Date.parse(end);
+        }else if(start != '' && end == ''){
+            curDate = Date.parse(start);
+        }else if(start == '' && end == ''){
+            layer.msg('请选择一个时间点！');
+            return false;
+        }
+        var nextDate = new Date(curDate + 24*60*60*1000);
+        $('#beginTime').val(getDate(nextDate));
+        $('#endTime').val(getDate(nextDate));
+        $('.search').trigger('click');
+    });
+});
+</script>
+
+<script src="__JS__/jquery.circliful.min.js"></script>
+{/block}

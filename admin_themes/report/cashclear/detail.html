@@ -1,0 +1,418 @@
+{extend name="base" /}
+{block name="body"}
+<style>
+     .data_row input {
+         width: 100%;
+         text-align: center;
+         border: none;
+     }
+     .report tfoot input {
+         border: none;
+     }
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <span class="layui-breadcrumb">
+                <a href="{:url('admin/report/index')}">报表列表</a>
+                <a href="{:url('admin/report/list',['reportNum'=>$reportNum])}">{:show_report_name($reportNum)}</a>
+                <a><cite>详情</cite></a>
+            </span>
+
+            <div class="title-box">
+                {$data['year']}年第{$data['quarter']}季度
+                {if $head == 1}
+                <form class="" id="search" action="{:url('admin/report/cash_stock_download',['year'=>$data['year'],'quarter'=>$data['quarter'],'bankCode'=>$bankCode,'reportNum'=>$reportNum])}">
+                    <button class="layui-btn layui-btn-small" id="down">下载报表</button>
+                </form>
+                {else}
+                {/if}
+
+            </div>
+            <table class="layui-table report">
+                <caption>{$data['year']}年第{$data['quarter']}季度{:show_report_name($reportNum)}</caption>
+                <caption class="t-tip">单位：元</caption>
+                <thead>
+                <tr>
+                    <th rowspan="3" width="10%">券别</th>
+                    <th colspan="9">机械部分</th>
+                    <th rowspan="2" colspan="3">手工清分</th>
+                    <th rowspan="2" colspan="3">合计</th>
+                </tr>
+                <tr>
+                    <th colspan="3">集中清分</th>
+                    <th colspan="3">网点清分</th>
+                    <th colspan="3">小计</th>
+                </tr>
+                <tr>
+                    <th width="7%">本期</th>
+                    <th width="7%">年累计</th>
+                    <th width="5%">占比</th>
+                    <th width="7%">本期</th>
+                    <th width="7%">年累计</th>
+                    <th width="5%">占比</th>
+                    <th width="7%">本期</th>
+                    <th width="7%">年累计</th>
+                    <th width="5%">占比</th>
+                    <th width="7%">本期</th>
+                    <th width="7%">年累计</th>
+                    <th width="5%">占比</th>
+                    <th width="7%">本期</th>
+                    <th width="7%">年累计</th>
+                </tr>
+                </thead>
+                <tbody>
+                {volist name="$data['tableData']" id="vo"}
+                <tr class="data_row">
+                    <td class="c"><input type="text" class="rowCode" value="{$vo['rowCode']}" readonly style="display:none;">{:get_report_name($reportNum,$vo['rowCode'])}</td>
+                    <td class="c"><input data-type="1" type="number" min="0" class="focusCurrent" value="{:number_format($vo['focusCurrent'],2,'.',',')}" readonly></td>
+                    <td class="c"><input data-type="2" type="number" min="0" class="focusTotal" value="{:number_format($vo['focusTotal'],2,'.',',')}" readonly></td>
+                    <td class="c"><input data-type="" data-style="0" type="text" value="{$vo['focusPer']}" class="focusPer" readonly style="display:none;"><span>{$vo['focusPer']}%</span></td>
+                    <td class="c"><input data-type="1" type="number" min="0" class="branchCurrent" value="{:number_format($vo['branchCurrent'],2,'.',',')}" readonly></td>
+                    <td class="c"><input data-type="2" type="number" min="0" class="branchTotal" value="{:number_format($vo['branchTotal'],2,'.',',')}" readonly></td>
+                    <td class="c"><input data-type="" data-style="0" type="text" value="{$vo['branchPer']}" class="branchPer" readonly style="display:none;"><span>{$vo['branchPer']}%</span></td>
+                    <td class="c"><input data-type="" data-style="0" type="number" min="0" class="subTotalCurrent" value="{:number_format($vo['subTotalCurrent'],2,'.',',')}" readonly></td>
+                    <td class="c"><input data-type="5" data-style="0" type="number" min="0" class="subTotalTotal" value="{:number_format($vo['subTotalTotal'],2,'.',',')}" readonly></td>
+                    <td class="c"><input data-type="" data-style="0" type="text" value="{$vo['subTotalPer']}" class="subTotalPer" readonly style="display:none;"><span>{$vo['subTotalPer']}%</span></td>
+                    <td class="c"><input data-type="3" type="number" min="0" class="handworkCurrent" value="{:number_format($vo['handworkCurrent'],2,'.',',')}" readonly></td>
+                    <td class="c"><input data-type="4" type="number" min="0" class="handworkTotal" value="{:number_format($vo['handworkTotal'],2,'.',',')}" readonly></td>
+                    <td class="c"><input data-type="" data-style="0" type="text" value="{$vo['handworkPer']}" class="handworkPer" readonly style="display:none;"><span>{$vo['handworkPer']}%</span></td>
+                    <td class="c"><input data-type="" data-style="0" type="number" min="0" class="rowCurTotal" value="{:number_format($vo['rowCurTotal'],2,'.',',')}" readonly></td>
+                    <td class="c"><input data-type="6" data-style="0" type="number" min="0" class="rowTotal" value="{:number_format($vo['rowTotal'],2,'.',',')}" readonly></td>
+                </tr>
+                {/volist}
+                <tr>
+                    <td class="c">合计</td>
+                    <td class="c focusCurrentSum"></td>
+                    <td class="c focusTotalSum"></td>
+                    <td class="c "><span class="focusPerSum"></span>%</td>
+                    <td class="c branchCurrentSum"></td>
+                    <td class="c branchTotalSum"></td>
+                    <td class="c "><span class="branchPerSum"></span>%</td>
+                    <td class="c subTotalCurrentSum"></td>
+                    <td class="c subTotalTotalSum"></td>
+                    <td class="c "><span class="subTotalPerSum"></span>%</td>
+                    <td class="c handworkCurrentSum"></td>
+                    <td class="c handworkTotalSum"></td>
+                    <td class="c "><span class="handworkPerSum"></span>%</td>
+                    <td class="c rowCurTotalSum"></td>
+                    <td class="c rowTotalSum"></td>
+                </tr>
+                </tbody>
+                <tfoot>
+                <tr>
+                    <td class="c" colspan="5">全辖银行营业网点（个）：<input type="number" min="0" class="ratioInput outlets" value="{$data['outlets']}" readonly></td>
+                    <td class="c" colspan="5">抽样银行营业网点（个）：<input type="number" min="0" class="ratioInput sampleOutlets" value="{$data['sampleOutlets']}" readonly></td>
+                    <td class="c" colspan="5">抽样比例（%）：<input type="text" class="ratio" readonly></td>
+                </tr>
+                <tr>
+                    <td class="c" colspan="5">全辖银行清分情况（台）：<input type="text" class="devSum" readonly></td>
+                    <td class="c" colspan="5">其中：清分中心清分设备：<input type="number" min="0" class="devInput centerDev" value="{$data['centerDev']}" readonly></td>
+                    <td class="c" colspan="5">银行网点清分设备：<input type="number" min="0" class="devInput branchDev" value="{$data['branchDev']}" readonly></td>
+                </tr>
+                </tfoot>
+            </table>
+
+            {if $head == 1}
+            <div class="title-box">银行列表</div>
+            <div class="layui-tab-item layui-show">
+                <table class="new-table" id="data_table">
+                    <thead>
+                    <tr>
+                        <th>银行</th>
+                        <th>状态</th>
+                        <th>时间</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {volist name="$data['bankList']" id="vo"}
+                    <tr class="low">
+                        <td>{$vo.bankName}</td>
+                        <td {if $vo.fillout == 0}class="red"{/if}>{$vo.filloutType}</td>
+                        <td>{$vo.opTime}</td>
+                        <td>
+                            {if $vo.fillout == 1}
+                            <a href="{:url('/admin/report/cashclear_detail',['reportNum'=>$reportNum, 'year'=>$data['year'],'quarter'=>$data['quarter'],'bankCode'=>$vo.bankCode])}">查看详情</a>
+                            {else}
+                            {/if}
+                        </td>
+                    </tr>
+                    {/volist}
+                    </tbody>
+                </table>
+                <div id="page_box"></div>
+            </div>
+            {else}
+            {/if}
+        </div>
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+    $(function() {
+
+        /*自动计算金额*/
+        function setNum(a,t){
+            var num = 0;
+            var class1 = '.'+a;
+            var class2 = '.'+a+'Sum';
+            $(class1).each(function(){
+                /*var value = $(this).val();
+                if(t == 1 || t == 2 || t == 3 || t == 4 ) {
+                    if(value>99999999){
+                        layer.msg('输入的金额过大！');
+                        $(this).val('');
+                        return false;
+                    }
+                    if(value<0){
+                        layer.msg('输入的金额不能小于0！');
+                        $(this).val('');
+                        return false;
+                    }
+                    var length = $(this).val().length;
+                    var first = value.indexOf(".");
+                    if( first>0 && length - first >5 ){
+                        layer.msg('输入的金额过小！');
+                        $(this).val('');
+                        return false;
+                    }
+                }*/
+                num += Number($(this).val()*10000);
+            });
+            $(class2).html(num/10000);
+            if(t == 1) {
+                total_A();
+                setNum('subTotalCurrent');
+                total_C();
+                setNum('rowCurTotal');
+            }else if( t == 2 ){
+                total_B();
+                setNum('subTotalTotal',5);
+                total_D();
+                setNum('rowTotal',6);
+            }else if( t == 3 ){
+                total_C();
+                setNum('rowCurTotal');
+            }else if( t == 4 ){
+                total_D();
+                setNum('rowTotal',6);
+            }else if( t == 5){
+                $('input[data-type="2"]').each(function(){
+                    var n = $(this).val()*10000;
+                    var p = Number((Number(n)/Number(num)*100).toFixed(2));
+                    var q = Number((Number(n)/Number(num)*100).toFixed(2));
+                    if (!p || p == Infinity || p > 100 ) {
+                        p = 0;
+                    }
+                    if (!q || q == Infinity || q > 100 ) {
+                        p = '--';
+                    }
+                    $(this).parent('td').next('td').find('input').val(q);
+                    $(this).parent('td').next('td').find('span').html(p+'%');
+                });
+                //setNum('focusPer');
+                focusPer();
+                //setNum('branchPer');
+                branchPer();
+            }else if( t == 6){
+                $('input[data-type="4"]').each(function(){
+                    var n = $(this).val()*10000;
+                    var p = Number((Number(n)/Number(num)*100).toFixed(2));
+                    var q = Number((Number(n)/Number(num)*100).toFixed(2));
+                    if (!p || p == Infinity || p > 100 ) {
+                        p = 0;
+                    }
+                    if (!q || q == Infinity || q > 100 ) {
+                        p = '--';
+                    }
+                    $(this).parent('td').next('td').find('input').val(q);
+                    $(this).parent('td').next('td').find('span').html(p+'%');
+                });
+                $('input[data-type="5"]').each(function(){
+                    var n = $(this).val()*10000;
+                    var p = Number((Number(n)/Number(num)*100).toFixed(2));
+                    var q = Number((Number(n)/Number(num)*100).toFixed(2));
+                    if (!p || p == Infinity || p > 100 ) {
+                        p = 0;
+                    }
+                    if (!q || q == Infinity || q > 100 ) {
+                        p = '--';
+                    }
+                    $(this).parent('td').next('td').find('input').val(q);
+                    $(this).parent('td').next('td').find('span').html(p+'%');
+                });
+                //setNum('subTotalPer');
+                subTotalPer();
+                //setNum('handworkPer');
+                handworkPer();
+            }
+        }
+
+        /*机械清分本期小计*/
+        function total_A(){
+            $('tr').each(function(){
+                /*t=1 本期*/
+                var A = 0;
+                var a = $(this).find('input[data-type="1"]');
+                $(a).each(function(){
+                    A += Number($(this).val())
+                });
+                $(this).find('td').find('.subTotalCurrent').val(A);
+            })
+        }
+        /*本期合计*/
+        function total_C(){
+            $('tr').each(function(){
+                /*t=1 本期*/
+                var C = 0;
+                var a = $(this).find('input[data-type="1"]');
+                $(a).each(function(){
+                    C += Number($(this).val())
+                });
+                var b = $(this).find('input[data-type="3"]');
+                C += Number(b.val());
+                $(this).find('td').find('.rowCurTotal').val(C);
+            })
+        }
+
+        /*机械清分本期小计*/
+        function total_B(){
+            $('tr').each(function(){
+                /*t=1 本期*/
+                var B = 0;
+                var a = $(this).find('input[data-type="2"]');
+                $(a).each(function(){
+                    B += Number($(this).val())
+                });
+                $(this).find('td').find('.subTotalTotal').val(B);
+            })
+        }
+        /*本期合计*/
+        function total_D(){
+            $('tr').each(function(){
+                /*t=1 本期*/
+                var D = 0;
+                var a = $(this).find('input[data-type="2"]');
+                $(a).each(function(){
+                    D += Number($(this).val())
+                });
+                var b = $(this).find('input[data-type="4"]');
+                D += Number(b.val());
+                $(this).find('td').find('.rowTotal').val(D);
+            })
+        }
+
+        /*集中清分占比*/
+        function focusPer(){
+            var a = $('.focusTotalSum').html();
+            var b = $('.subTotalTotalSum').html();
+            var p = Number((Number(a)/Number(b)*100).toFixed(2));
+            if (!p || p == Infinity || p > 100 ) {
+                p = '--';
+            }
+            $('.focusPerSum').html(p);
+        }
+        /*网点清分占比*/
+        function branchPer(){
+            var a = $('.branchTotalSum').html();
+            var b = $('.subTotalTotalSum').html();
+            var p = Number((Number(a)/Number(b)*100).toFixed(2));
+            if (!p || p == Infinity || p > 100 ) {
+                p = '--';
+            }
+            $('.branchPerSum').html(p);
+        }
+        /*机械部分占比*/
+        function subTotalPer(){
+            var a = $('.subTotalTotalSum').html();
+            var b = $('.rowTotalSum').html();
+            var p = Number((Number(a)/Number(b)*100).toFixed(2));
+            if (!p || p == Infinity || p > 100 ) {
+                p = '--';
+            }
+            $('.subTotalPerSum').html(p);
+        }
+        /*手工清分占比*/
+        function handworkPer(){
+            var a = $('.handworkTotalSum').html();
+            var b = $('.rowTotalSum').html();
+            var p = Number((Number(a)/Number(b)*100).toFixed(2));
+            if (!p || p == Infinity || p > 100 ) {
+                p = '--';
+            }
+            $('.handworkPerSum').html(p);
+        }
+
+
+
+
+
+
+        /*自执行函数---在查看和修改里面需要用*/
+        setNum('focusCurrent');
+        setNum('focusTotal');
+        //setNum('focusPer');
+        setNum('branchCurrent');
+        setNum('branchTotal');
+        //setNum('branchPer');
+        setNum('subTotalCurrent');
+        setNum('subTotalTotal');
+        //setNum('subTotalPer');
+        setNum('handworkCurrent');
+        setNum('handworkTotal');
+        //setNum('handworkPer');
+        setNum('rowCurTotal');
+        setNum('rowTotal');
+
+        focusPer();
+        branchPer();
+        subTotalPer();
+        handworkPer();
+
+        $('tbody tr td input').each(function(){
+            var a = $(this).attr('class');
+            var t = $(this).attr('data-type');
+            $(this).bind('input propertychange', function() { setNum(a,t); });
+            $(this).blur(function(){ setNum(a,t); });
+            $(this).on('keypress',function(){ setNum(a,t); });
+        });
+
+        /*计算百分比*/
+        function ratio(){
+            var outlets = $('.outlets').val();
+            var sampleOutlets = $('.sampleOutlets').val();
+            var ratio = Number((Number(sampleOutlets)/Number(outlets)*100).toFixed(2));
+            if (!ratio || ratio == Infinity) {
+                ratio = '--';
+            }
+            $('.ratio').val(ratio+'%');
+        }
+        ratio();
+        $('.ratioInput').bind('input propertychange', function() { ratio(); });
+        $('.ratioInput').blur(function(){ ratio(); });
+        $('.ratioInput').on('keypress',function(){ ratio(); });
+
+        /*计算清分机台数*/
+        function devSum(){
+            var centerDev = $('.centerDev').val();
+            var branchDev = $('.branchDev').val();
+            if (!centerDev || centerDev == Infinity) {
+                centerDev = 0;
+            }
+            if(!branchDev || branchDev == Infinity) {
+                branchDev = 0;
+            }
+            var devSum = Number((Number(centerDev)+Number(branchDev)));
+            $('.devSum').val(devSum);
+        }
+        devSum();
+        $('.devInput').bind('input propertychange', function() { devSum(); });
+        $('.devInput').blur(function(){ devSum(); });
+        $('.devInput').on('keypress',function(){ devSum(); });
+    })
+</script>
+{/block}

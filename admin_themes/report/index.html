@@ -1,0 +1,58 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <div class="layui-tab-content">
+        <div class="title-box" style="margin: 10px 0;">
+            <div class="title">
+                报表列表
+            </div>
+        </div>
+        <table class="new-table" id="data_table">
+            <thead>
+                <tr>
+                    <th>序号</th>
+                    <th>报表名称</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    // 获取报表列表 start
+    function search(curr){
+        layer.load(2);
+        var gzh_code = $.trim($('.gzh_code').val());
+        var url = "__ROOT__/api/report/reports";
+        var op = { };
+
+        data_page(url,op,function (result) {
+            console.log(result);
+            layer.closeAll('loading');
+            var data = result.data;
+            var reportInfos = data.reportInfos;
+            var html_str = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < reportInfos.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td>"+reportInfos[i].id+"</td>";
+                    html_str = html_str + "<td>"+reportInfos[i].reportShowName+"</td>";
+                    html_str = html_str + '<td><a href="__ROOT__/admin/report/list/reportNum/'+reportInfos[i].reportNum+'.html" >查看</a></td>';
+                    html_str = html_str + '</tr>';
+                }
+            }else{
+                html_str = '<tr><td colspan="3" style="text-align: center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="location = location">刷新</a></td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+        });
+    };
+    search();
+    // 获取报表列表 end
+</script>
+{/block}

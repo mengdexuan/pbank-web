@@ -1,0 +1,108 @@
+{extend name="base" /}
+{block name="body"}
+<style>
+    .new-table td {
+        padding: 12px 0;
+        min-height: 20px;
+        line-height: 20px;
+        border-bottom: 1px solid #eaeaea;
+        font-size: 14px;
+    }
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+
+        <div class="layui-tab-content">
+            <div class="title-box" style="margin: 10px 0;">
+                <div class="title">版本列表</div>
+                <div class="link"><a class="layui-btn layui-btn-small" href="{:url('admin/update/add')}" style="color: #fff">添加新版本</a></div>
+            </div>
+            <div class="layui-tab-item layui-show">
+                <div class="button-box">
+                <button class="layui-btn layui-btn-small curr_type" type="button" data-type="">全部</button>
+                {foreach name="program_types" item="vo" }
+                <button class="layui-btn layui-btn-primary layui-btn-small" type="button" data-type="{$key}">{$vo}</button>
+                {/foreach}
+                </div>
+                <table class="new-table" id="data_table">
+                    <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>程序类型</th>
+                        <th>程序名称</th>
+                        <th>程序版本</th>
+                        <th>md5加密</th>
+
+
+                    </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" class="text-center">查询中</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="page_box"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+    $('.button-box').find('.layui-btn').click(function(){
+        $(this).removeClass('layui-btn-primary').addClass('curr_type').siblings().removeClass('curr_type').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        search();
+    });
+    function search(curr){
+        layer.load(2);
+        var url = "__ROOT__/api/bank/query_update_file_list";
+        var op = {
+            cur_page: curr || 1,
+            program_type:$('.curr_type').attr('data-type')
+        };
+
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var files = data.files;
+            var html_str = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < files.length; i++){
+                    html_str = html_str + "<tr>";
+                    html_str = html_str + "<td>"+(i+1)+"</td>";
+                    html_str = html_str + "<td>"+files[i].program_type_str+"</td>";
+                    html_str = html_str + "<td>"+files[i].program_name+"</td>";
+                    html_str = html_str + "<td>"+files[i].program_version+"</td>";
+                    html_str = html_str + "<td>"+files[i].program_code+"</td>";
+                    html_str = html_str + '<tr>';
+                }
+
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = '<tr><td colspan="5" class="text-center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="location=location">刷新</a></td></tr>';
+            }
+
+                $('#data_table').find('tbody').html(html_str);
+                $('#data_table').find('tbody').hide();
+                $('#data_table').find('tbody').fadeIn(500);
+
+        });
+    };
+    //运行
+    search();
+
+</script>
+{/block}

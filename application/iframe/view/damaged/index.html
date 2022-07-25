@@ -1,0 +1,895 @@
+{extend name="base" /}
+{block name="css"}
+<style>
+    .layui-input, .layui-textarea{
+        width: 90%;
+    }
+    .amount-table {
+        width: 450px;
+        margin: 0 auto;
+        margin-bottom: 20px;
+    }
+    .amount-table thead,
+    .amount-table tfoot{
+        display: block;
+        width: 450px;
+    }
+    .amount-table tbody {
+        height: 172px;
+        overflow-y:scroll;
+        display:block
+    }
+    .amount-table th,
+    .amount-table tr {
+        text-align: center !important;
+    }
+    .td1{
+        width:200px;
+        min-width:200px;
+        max-width:200px;
+    }
+    .td2{
+        width:115px;
+        min-width:100px;
+        max-width:150px;
+    }
+    .td3{
+        width:200px;
+        min-width:200px;
+        max-width:200px;
+    }
+    .layui-table td.td4{
+        width:282px;
+        padding: 9px 30px;
+    }
+    .amount-input {
+        width: 200px;
+        height: 20px;
+    }
+    .valuta_amount,
+    .valuta_amount2{
+        color: green;
+        font-weight: bold;
+    }
+    .input-box {
+        display: inline-block;
+        height: 38px;
+        line-height: 38px;
+        margin-right: 20px;
+    }
+    .input-box input {
+        width: 18px;
+        height: 18px;
+        float: left;
+        margin: 9px 3px 0 0
+    }
+    .layui-table thead tr:not(first-child) {
+        background-color: #fff;
+    }
+    .none {
+        display: none;
+    }
+    .del-damaged,
+    .del-delete {
+        margin-right: 20px;
+        cursor: pointer;
+        color: #1DB3A1;
+    }
+    .outroom,.inway,.inroom{
+        margin-right: 20px;
+    }
+    .outroom {
+        cursor: pointer;
+        color: #1DB3A1;
+    }
+</style>
+{/block}
+{block name="body"}
+<div class="layui-tab layui-tab-brief">
+    <div class="layui-tab-content">
+        <span class="layui-breadcrumb">
+            <a href="{:url('iframe/booking/index',['bank_code'=>$bank_key])}">预约交取款</a>
+            <a><cite>上交残损券</cite></a>
+        </span>
+        <div class="layui-form-item" style="margin-top:20px;">
+            <button class="layui-btn layui-btn-small " id="add_save">上交残损券</button>
+        </div>
+        <div class="title-box" style="margin: 10px 0;">
+            <div class="title">上交记录</div>
+            <div class="link"></div>
+        </div>
+        <div class="layui-form-item" style="margin-top: 10px;">
+            <button id="show_all" class="layui-btn layui-btn-small" style="float:left;margin-right:15px;">全部</button>
+            <div class="layui-input-inline" style="width: 125px;">
+                <input type="text" name="beginTime" placeholder="选择日期" id="beginTime" value=""  autocomplete="off" class="layui-input laydate-icon choice_date">
+            </div>
+            <div style="display: inline-block;float: left;height: 32px;line-height: 32px;margin-right: 10px;">----</div>
+            <div class="layui-input-inline" style="width: 125px;">
+                <input type="text" name="endTime" placeholder="选择日期" id="endTime" value=""  autocomplete="off" class="layui-input laydate-icon choice_date">
+            </div>
+            <button id="show_part" class="layui-btn layui-btn-small">查询</button>
+            <button id="show_clear" class="layui-btn layui-btn-small">清除</button>
+            <div class="layui-inline" style="height: 32px;">
+                <label class="layui-form-label" style="text-align:left;margin-right: -58px;">单位：</label>
+                <div class="layui-input-inline">
+                    <select class="layui-input" style="cursor: pointer;width: 68px;" id="doConversion">
+                        <option value="y" <?php echo think\Cookie::get("parameDoConversionIframe") == "元"?"selected":"";?>>元</option>
+                        <option value="w" <?php echo think\Cookie::get("parameDoConversionIframe") == "万元"?"selected":"";?>>万元</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <table class="new-table" id="data_table">
+            <thead>
+            <tr>
+                <th>上交日期</th>
+                <th>实际 / 审核 / 预约</th>
+                <th>状态</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="4" class="text-center">查询中</td>
+                </tr>
+            </tbody>
+        </table>
+        <div id="page_box"></div>
+    </div>
+</div>
+<!--新增-->
+<div id="save_dialog" style="display: none">
+    <form class="form-container" action="{:url('/api/bank/add_damage_stock')}" method="post">
+        <input type="hidden" name="bank_code" value="{$bank_code}">
+        <input type="hidden" name="op_name" id="op_name" value="{$op_name}">
+        <div class="layui-form-item"  style="margin-top: 20px;">
+            <label class="layui-form-label">预约时间</label>
+            <div class="layui-input-inline">
+                <input type="text" name="stock_date" value="" required lay-verify="date" placeholder="请选择预约时间" id="LAY_demorange_s_n" class="laydate-icon layui-input plan_time" style="height: 38px;line-height: 38px;">
+            </div>
+            <select name="hour" class="hour" style="min-width:30px;height:36px;line-height:36px;margin-right:0">
+                <option value="08">08</option>
+                <option value="09" selected>09</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+                <option value="16">16</option>
+                <option value="17">17</option>
+                <option value="18">18</option>
+            </select>
+            时
+            <select name="minute" class="minute" style="min-width:30px;height:36px;line-height:36px;margin-right:0">
+                <option value="00">00</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+                <option value="40">40</option>
+                <option value="50">50</option>
+            </select>
+            分
+        </div>
+        <table class="layui-table amount-table">
+            <thead>
+            <tr>
+                <th class="td1">版别</th>
+                <th class="td3">残损券金额(元)</th>
+            </tr>
+            </thead>
+            <tbody>
+            {volist name="valuta_info" id="vo"}
+            <tr class="low">
+                <td class="td1">
+                    {$vo['valuta_name']}
+                    <input type="hidden" name="valuta_value[{$vo['valuta_code']}]" value="{$vo['valuta_value']}">
+                </td>
+                <td class="td3">
+                    <input name="amount[{$vo['valuta_code']}]" onblur="checkNumIsMul(this)" value="" type="text" class="amount-input amount-input-hastip"  data-code="{$vo['valuta_code']}" data-value="{$vo['valuta_value']}" min="0">
+                </td>
+            </tr>
+            {/volist}
+            </tbody>
+            <tfoot>
+            <tr>
+                <td class="td1">总计</td>
+                <td class="total td3">
+                    <span class="valuta_amount"></span>
+                </td>
+            </tr>
+            </tfoot>
+        </table>
+        <div class="layui-form-item">
+            <label class="layui-form-label">备注</label>
+            <div class="layui-input-inline">
+                <textarea name="note" id="note" placeholder="请输入内容" class="layui-textarea" style="width: 370px; min-height: 60px;"></textarea>
+            </div>
+        </div>
+        <input type="hidden" name="bank_flag" value="">
+        <button class="layui-btn none" lay-submit="" lay-filter="*" id="damaged-btn">提交</button>
+    </form>
+</div>
+<!--修改-->
+<div id="save_dialog2" style="display: none">
+    <form class="form-container" action="{:url('/api/bank/modify_damage_stock')}" method="post">
+        <input type="hidden" name="bank_code" value="{$bank_code}">
+        <input type="hidden" name="op_name" id="op_name2" value="{$op_name}">
+        <input type="hidden" name="stock_id" id="stock_id" value="">
+        <input type="hidden" name="stock_date" id="stock_date" value="">
+        <div class="layui-form-item"  style="margin-top: 20px;">
+            <label class="layui-form-label">预约时间</label>
+            <div class="layui-input-inline">
+                <input type="text" name="stock_date_readonly" value="" required lay-verify="date" placeholder="请选择预约时间" id="LAY_demorange_s" class="laydate-icon layui-input plan_time" style="height: 38px;line-height: 38px;">
+            </div>
+            <select name="hour" class="hour" style="min-width:30px;height:36px;line-height:36px;margin-right:0">
+                <option value="08">08</option>
+                <option value="09">09</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+                <option value="16">16</option>
+                <option value="17">17</option>
+                <option value="18">18</option>
+            </select>
+            时
+            <select name="minute" class="minute" style="min-width:30px;height:36px;line-height:36px;margin-right:0">
+                <option value="00">00</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+                <option value="40">40</option>
+                <option value="50">50</option>
+            </select>
+            分
+        </div>
+
+        <table class="layui-table amount-table">
+            <thead>
+            <tr>
+                <th class="td1">版别</th>
+                <th class="td3">残损券金额(元)</th>
+            </tr>
+            </thead>
+            <tbody>
+            {volist name="valuta_info" id="vo"}
+            <tr class="low">
+                <td class="td1">
+                    {$vo['valuta_name']}
+                    <input type="hidden" name="valuta_value[{$vo['valuta_code']}]" value="{$vo['valuta_value']}">
+                </td>
+                <td class="td3">
+                    <input onblur="checkNumIsMul(this)" name="amount[{$vo['valuta_code']}]" value="" type="text" class="amount-input2"  data-code="{$vo['valuta_code']}" data-value="{$vo['valuta_value']}" min="0">
+                </td>
+            </tr>
+            {/volist}
+            </tbody>
+            <tfoot>
+            <tr>
+                <td class="td1">总计</td>
+                <td class="total td3">
+                    <span class="valuta_amount2"></span>
+                </td>
+            </tr>
+            </tfoot>
+        </table>
+        <div class="layui-form-item">
+            <label class="layui-form-label">备注</label>
+            <div class="layui-input-inline">
+                <textarea name="note" id="note2" placeholder="请输入内容" class="layui-textarea" style="width: 370px; min-height: 60px;"></textarea>
+            </div>
+        </div>
+        <input type="hidden" name="bank_flag" value="">
+        <button class="layui-btn none" lay-submit="" lay-filter="*" id="damaged-btn2">提交</button>
+    </form>
+</div>
+
+<!--上交残损券-出库-->
+<div id="out_dialog" style="display: none">
+    <form class="form-container" action="{:url('/api/bank/damage_out_room')}" method="post">
+        <input type="hidden" name="bank_code" id="bank_code" value="{$bank_code}">
+        <input type="hidden" name="op_name" id="op_name" value="{$op_name}">
+        <input type="hidden" name="stock_id" id="stock_id2" value="">
+        <div class="layui-form-item"  style="margin-top: 20px ;opacity:0">
+            <label class="layui-form-label" style="margin-left: 14px;"><input id="hide_empty" type="checkbox" > 隐藏空行</label>
+        </div>
+        <table class="layui-table amount-table">
+            <thead>
+            <tr>
+                <th class="td2">版别</th>
+                <th class="td2">审核金额(元)</th>
+                <th class="td2">出库金额(元)</th>
+            </tr>
+            </thead>
+            <tbody>
+            {volist name="valuta_info" id="vo"}
+            <tr class="low low_out">
+                <td class="td2">
+                    {$vo['valuta_name']}
+                    <input type="hidden" name="valuta_value[{$vo['valuta_code']}]" value="{$vo['valuta_value']}">
+                </td>
+                <td class="td2 task_amount"></td>
+                <td class="td2">
+                    <input onblur="checkNumIsMul(this)" name="amount[{$vo['valuta_code']}]" value="" type="text" class="amount-input_out"  data-code="{$vo['valuta_code']}" data-value="{$vo['valuta_value']}" min="0" size="10">
+                </td>
+            </tr>
+            {/volist}
+            </tbody>
+            <tfoot>
+            <tr>
+                <td class="td2">总计</td>
+                <td class="total td2">
+                    <span class="valuta_amount_out"></span>
+                </td>
+                <td class="total td2">
+                    <span class="valuta_amount_out valuta_amount3"></span>
+                </td>
+            </tr>
+            </tfoot>
+        </table>
+        <input type="hidden" name="bank_flag" value="">
+        <div class="un-equal-tip" style="text-align:center;color: red;display:none;">出库金额与审核金额不符，请确认是否正确</div>
+        <button class="layui-btn none" lay-submit="" lay-filter="*" id="out-btn">提交</button>
+    </form>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+    var start = {
+        min: laydate.now(+1)
+        ,max: '2099-06-16 23:59:59'
+        ,istoday: false
+        ,choose: function(datas){
+        }
+    };
+    var bank_code = "{$bank_code}";
+    document.getElementById('LAY_demorange_s').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    }
+
+    //创建预约 strat
+    var start2 = {
+        min: laydate.now(+1)
+        ,max: '2099-06-16 23:59:59'
+        ,istoday: true
+        ,choose: function(datas){
+        }
+    };
+    document.getElementById('LAY_demorange_s_n').onclick = function(){
+        start2.elem = this;
+        laydate(start2);
+    }
+    var iBtn = 0;
+    $('#add_save').click(function () {
+         trueMoney = $('.valuta_amount').text();
+        if (trueMoney == 'undifined') {
+             trueMoney = 0;
+        }else{
+             trueMoney = number_format(trueMoney,2,'.',',')
+        }
+        var save_dom = $('#save_dialog');
+        save_dom.find('form')[0].reset();
+        layer.open({
+            type: 1,
+            area: ['520px', '530px'],
+            title:'上交残损券',
+            content: save_dom,
+            btn: ['确定', '取消'],
+            yes: function(index, layero){
+                if (iBtn < 1) {
+                    layer.msg('请核对任务金额'+trueMoney+'元', {
+                      time: 0 //不自动关闭
+                      ,btn: '已知晓'
+                      ,yes: function(index){
+                        iBtn = Number(iBtn)+1;
+                        layer.close(index);
+                      }
+                    });                    
+                }else{
+                   $('#damaged-btn').click();
+                }
+            }
+            ,btn2: function(index, layero){
+                iBtn = 0;
+                layer.closeAll();
+                $('#save_dialog').hide();
+            }
+            ,cancel: function(){
+                iBtn = 0;
+                layer.closeAll();
+                $('#save_dialog').hide();
+            }
+        });
+    });
+    //创建预约 end
+
+
+    function resetform(){
+        $('.new-plan-code').val('');
+        $('.new_plan_type').val('');
+        $('.new_plan_time').val('');
+        $("input[name='plan_type']").each(function() {
+            $(this).removeAttr('disabled','disabled')
+            $(this).removeAttr('checked')
+            if ($(this).val() == 0) {
+                $(this).prop("checked", "checked");
+                $(this).attr('checked',true)
+            }
+
+        });
+        $('.plan_time').val('').removeAttr('disabled');
+        $('.amount-input').each(function(){
+            $(this).val('')
+        });
+        $('.valuta_amount').val('').html('');
+        $('#note').val('').html('');
+    }
+
+    $('.ajax-del').on('click', function () {
+        var _href = $(this).attr('href');
+        layer.open({
+            shade: false,
+            content: '确定删除？',
+            btn: ['确定', '取消'],
+            yes: function (index) {
+                $.ajax({
+                    url: _href,
+                    data:{},
+                    type: "get",
+                    data_type:'json',
+                    success: function (info) {
+                        if (info.err_code == 0) {
+                            setTimeout(function () {
+                                window.location.href = '';
+                            }, 1000);
+                            layer.msg('删除成功');
+                        }else {
+                            layer.msg(info.err_msg);
+                        }
+
+                    }
+                });
+                layer.close(index);
+            }
+        });
+
+        return false;
+    });
+
+    //计算总金额
+    function setTotalAmount(){
+        var a = 0
+        $('.amount-input').each(function(){
+            if(Number($(this).val()) != '' && Number($(this).val()) < 0 ){
+                layer.msg('请正确填写金额');
+                return false;
+            }
+            a += Number($(this).val());
+        })
+        $('.valuta_amount').html(number_format(a,2,'.',','));
+    }
+    $('.amount-input').bind('input propertychange', function() {
+        setTotalAmount();
+    });
+    $(".amount-input").blur(function(){
+        setTotalAmount();
+    });
+    $(".amount-input").on('keypress',function(){
+        setTotalAmount();
+    })
+    // 新建-计算总金额
+    function setTotalAmount2(){
+        var a = 0
+        $('.amount-input2').each(function(){
+            if(Number($(this).val()) != '' && Number($(this).val()) < 0 ){
+                layer.msg('请正确填写金额');
+                return false;
+            }
+            a += Number($(this).val());
+        })
+        $('.valuta_amount2').html(a)
+    }
+    $('.amount-input2').bind('input propertychange', function() {
+        setTotalAmount2();
+    });
+    $(".amount-input").blur(function(){
+        setTotalAmount2();
+    });
+    $(".amount-input").on('keypress',function(){
+        setTotalAmount2();
+    });
+    function resetload(){
+        setTimeout(function(){
+          layer.closeAll('loading');
+        }, 2000);
+    }
+
+    /*出库*/
+    // 新建-计算总金额
+    function setTotalAmount3(){
+        var a = 0;
+        var t = 0;
+        $('.amount-input_out').each(function(){
+
+            var m = Number($(this).val());
+            var n = Number($(this).parent('td').prev('.task_amount').html());
+            /*console.log(m);
+             console.log(n);*/
+            if(m!='' && m!=n){
+                //console.log('不相同');
+                $(this).parent('td').parent('tr').addClass('red');
+                t++;
+
+            }else if(m!='' && m==n){
+                $(this).parent('td').parent('tr').removeClass('red');
+
+            }
+
+            if(Number($(this).val()) != '' && Number($(this).val()) < 0 ){
+                layer.msg('请正确填写金额');
+                return false;
+            }
+            a += Number($(this).val());
+        })
+
+        if(t>0){
+            $('.un-equal-tip').show();
+        }else{
+            $('.un-equal-tip').hide();
+        }
+        $('.valuta_amount3').html(a)
+    }
+    $('.amount-input_out').bind('input propertychange', function() {
+        setTotalAmount3();
+    });
+    $(".amount-input_out").blur(function(){
+        setTotalAmount3();
+    });
+    $(".amount-input_out").on('keypress',function(){
+        setTotalAmount3();
+    });
+
+    form.on('submit(*)', function(data){
+        console.log($(data.form).serialize());
+        layer.load(2);
+        $.ajax({
+            url: data.form.action,
+            type: data.form.method,
+            data: $(data.form).serialize(),
+            success: function (info) {
+                if (info.err_code == 0) {
+                    setTimeout(function () {
+                        window.location.href = '';
+                    }, 1000);
+                    info.err_msg = '提交成功'
+                }
+                console.log(info);
+                layer.msg(info.err_msg);
+                resetload();
+            }
+        });
+
+        return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+    });
+
+    function search(curr,val){
+        if(val==0){
+            var begin_time = "";
+            var end_time = "";
+        }else if(val==1){
+            var begin_time = $('#beginTime').val();
+            var end_time = $('#endTime').val();
+        }
+        layer.load(2);
+        var url = "__ROOT__/api/bank/query_damage_stock_records";
+        var op = {
+            bank_code:'{$bank_code}',
+            cur_page: curr || 1,
+            start_date: begin_time,
+            end_date: end_time
+        };
+
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var list = data.stock_records;
+            //console.log(list);
+            //console.log(list);
+            var html_str = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < list.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td>"+list[i].stock_date+' '+list[i].stock_time+"</td>";
+                    html_str = html_str + "<td><span class='red doVersionOne'>"+list[i].task_amount_str+"</span> / <span class='red doVersionOne'>"+list[i].approve_amount_str+"</span> / <span class='red doVersionOne'>"+list[i].amount_str+"</span></td>";
+                    var status = '';
+                    if(list[i].stock_status == 0){
+                        status = 'red';
+                    }
+                    html_str = html_str + "<td><span class='"+status+"'>"+list[i].stock_status_str+"</span></td>";
+                    if( list[i].stock_status == 0 ){
+                        html_str = html_str + '<td><span class="del-damaged" data="'+list[i].stock_date+'">修改</span><span class="del-delete red" data-id="'+list[i].stock_id+'" data="'+list[i].stock_date+'">删除</span><a href="__ROOT__/iframe/damaged/info/bank_code/{$bank_key}/query_date/'+list[i].stock_date+'.html" >查看</a></td>';
+                    }else{
+                        if( list[i].task_status == 0 ){
+                            html_str = html_str + '<td><span class="outroom" data-id="'+list[i].stock_id+'" data="'+list[i].stock_date+'">出库</span><a href="__ROOT__/iframe/damaged/info/bank_code/{$bank_key}/query_date/'+list[i].stock_date+'.html" >查看</a></td>';
+                        }else if(list[i].task_status == 1){
+                            html_str = html_str + '<td><span class="inway">在途</span><a href="__ROOT__/iframe/damaged/info/bank_code/{$bank_key}/query_date/'+list[i].stock_date+'.html" >查看</a></td>';
+                        }else if(list[i].task_status == 2){
+                            html_str = html_str + '<td><span class="inroom">已入库</span><a href="__ROOT__/iframe/damaged/info/bank_code/{$bank_key}/query_date/'+list[i].stock_date+'.html" >查看</a></td>';
+                        }
+                    }
+                    html_str = html_str + '</tr>';
+                }
+
+                if(html_str == ''){
+                    html_str = '<td colspan="4" style="text-align: center">暂无数据</td>';
+                }
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr,val);
+                        }
+                    }
+                });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = '<tr><td colspan="5" class="text-center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="location=location">刷新</a></td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+            $("#doConversion").trigger("change");
+            //修改预约 strat
+            $('.del-damaged').click(function () {
+
+                var bank_code = $('input[name="bank_code"]').val();
+                var query_date = $(this).attr('data');
+                $.ajax({
+                    url: '__ROOT__/api/bank/query_damage_stock',
+                    data:{
+                        bank_code:bank_code,
+                        query_date:query_date
+                    },
+                    type: "post",
+                    data_type:'json',
+                    success: function (info) {
+                        console.log(info);
+                        if (info.err_code == 0) {
+                            var data = info.data.stock_info;
+                            var stock_date = data.stock_date;
+                            var stock_time = data.stock_time;
+                            var hour = stock_time.split(':')[0];
+                            var minute = stock_time.split(':')[1];
+                            var amount = data.amount;
+                            var stock_id = data.stock_id;
+                            var stock_details = data.stock_details;
+                            var note = data.note;
+                            console.log(note);
+
+                            $('#stock_date').val(stock_date);
+                            $('.plan_time').val(stock_date).attr('disabled','disabled');
+                            $('.new-plan-time').val(stock_date);
+                            $(".hour").val(hour);
+                            $(".minute").val(minute);
+                            $('.valuta_amount2').html(amount);
+                            $('#note2').val(note).html(note);
+                            $('#stock_id').val(stock_id);
+
+                            for(var i = 0; i < stock_details.length; i++){
+                                var c = stock_details[i].valuta_code;
+                                var m = stock_details[i].amount;
+                                console.log(c+':'+m)
+                                $('.amount-input2').each(function(){
+                                    if($(this).attr('data-code') == c ){
+                                        $(this).val(m)
+                                    }
+                                })
+                            }
+                        }else {
+                            layer.msg(info.err_msg);
+                        }
+                    }
+                });
+                layer.open({
+                    type: 1,
+                    area: ['520px', '530px'],
+                    title:'上交残损券',
+                    content: $('#save_dialog2'),
+                    btn: ['确定', '取消'],
+                    yes: function(index, layero){
+                        $('#damaged-btn2').click();
+                    }
+                    ,btn2: function(index, layero){
+                        $('#save_dialog2').hide();
+                        resetform()
+                    }
+                    ,cancel: function(){
+                        $('#save_dialog2').hide();
+                        resetform()
+                    }
+                });
+            });
+
+            //修改预约 end
+
+            // 删除预约
+
+            $('.del-delete').on('click', function () {
+                var stock_id = $(this).attr('data-id');
+                layer.open({
+                    shade: false,
+                    content: '确定删除？',
+                    btn: ['确定', '取消'],
+                    yes: function (index) {
+                        $.ajax({
+                            url: '__ROOT__/api/bank/del_damage_stock',
+                            data:{stock_id:stock_id},
+                            type: "post",
+                            success: function (info) {
+                                if (info.err_code === 0) {
+                                    setTimeout(function () {
+                                        //location.href = info.url;
+                                        window.location.href = '';
+                                    }, 1000);
+                                    info.err_msg = '删除成功';
+                                }
+                                layer.msg(info.err_msg);
+                            }
+                        });
+                        layer.close(index);
+                    }
+                });
+                return false;
+            });
+            // 出库
+            $('.outroom').on('click', function () {
+                var stock_id = $(this).attr('data-id');
+                var query_date = $(this).attr('data');
+                $.ajax({
+                    url: '__ROOT__/api/bank/query_damage_stock',
+                    data:{
+                        bank_code:bank_code,
+                        query_date:query_date
+                    },
+                    type: "post",
+                    data_type:'json',
+                    success: function (info) {
+                        console.log(info);
+                        if (info.err_code == 0) {
+                            var data = info.data.stock_info;
+                            var stock_date = data.stock_date;
+                            var stock_time = data.stock_time;
+                            var hour = stock_time.split(':')[0];
+                            var minute = stock_time.split(':')[1];
+                            var stock_id = data.stock_id;
+                            var amount = data.approve_amount;
+                            var stock_details = data.stock_details;
+                            var note = data.note;
+                            $('.valuta_amount_out').html(amount);
+                            $('#note2').val(note).html(note);
+                            $('#stock_id2').val(stock_id);
+                            for(var i = 0; i < stock_details.length; i++){
+                                var c = stock_details[i].valuta_code;
+                                var m = stock_details[i].task_amount;
+                                console.log(c+':'+m)
+                                $('.amount-input_out').each(function(){
+                                    if($(this).attr('data-code') == c ){
+                                        $(this).val(m)
+                                        $(this).parent().parent().find('.task_amount').html(m);
+                                    }
+                                })
+                            }
+                        }else {
+                            layer.msg(info.err_msg);
+                        }
+                    }
+                });
+                layer.open({
+                    type: 1,
+                    area: ['520px', '530px'],
+                    title:'上交残损券-出库',
+                    content: $('#out_dialog'),
+                    btn: ['确定', '取消'],
+                    yes: function (index) {
+                        $('#out-btn').click();
+                    }
+                    ,btn2: function(){
+                        $('#out_dialog').hide();
+                        resetform()
+                    }
+                    ,cancel: function(){
+                        $('#out_dialog').hide();
+                        resetform()
+                    }
+                });
+                return false;
+            });
+        });
+    };
+    //运行
+    search(1,0);
+    //全部
+    $('#show_all').click(function(){
+        search(1,0);
+        $('#beginTime').val('');
+        $('#endTime').val('')
+    });
+    //某个时间段
+    var _type = 'today';
+    var start = {
+        elem:'focus',
+        istoday: true
+        ,choose: function(datas){
+            $('.layui-input-inline').find('.layui-btn').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        }
+    };
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    document.getElementById('endTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    $('#show_part').click(function(){
+        console.log($('#beginTime').val());
+        console.log($('#endTime').val());
+        var start_date = $('#beginTime').val();
+        var end_date = $('#endTime').val();
+        if(get_time(start_date) >get_time(end_date)){
+            layer.msg('开始时间不能大于结束时间');
+            return false;
+        }
+        if(start_date == '' && end_date == ''){
+            layer.msg('请选择开始时间与结束时间');
+            return false;
+        }
+        search(1,1);
+    });
+    //清除
+    $('#show_clear').click(function(){
+        search(1,0);
+        $('#beginTime').val('');
+        $('#endTime').val('')
+    });
+    $('.amount-input').blur(function(){
+        iBtn = 0;
+        trueMoney = $('.valuta_amount').text();
+    });
+    //元万元亿切换
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+        $('.doVersionOne').each(function(i,e){
+            if (!$(this).attr('number')) {
+                $(this).attr('number',$(this).text());
+            }
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+            
+            $(this).text(numberNew);                
+        });
+    });
+</script>
+{/block}

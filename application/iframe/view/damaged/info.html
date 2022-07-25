@@ -1,0 +1,176 @@
+{extend name="base" /}
+{block name="css"}
+{/block}
+{block name="body"}
+<div class="layui-tab layui-tab-brief">
+    <div class="layui-tab-content">
+        <span class="layui-breadcrumb">
+            <a href="{:url('iframe/damaged/index',['bank_code'=>$bank_key])}">上交残损券</a>
+            <a><cite>详情</cite></a>
+        </span>
+        <div class="layui-form-item" style="margin: 20px 0">
+            上交日期：{$stock_date} {$stock_time}
+        </div>
+        <div class="layui-form-item" style="margin: 20px 0">
+            上报时间：{$last_time}
+            <div class="hideLineBox" style="display:inline-block;margin-left:30px;">
+                <input type="checkbox" name="hideLineBtn" id="hideLine" checked="checked">
+                <label for="hideLine">隐藏空行</label>
+            </div>
+        </div>
+        <div class="layui-inline" style="height: 32px;">
+            <label class="layui-form-label" style="text-align:left;margin-right: -58px;">单位：</label>
+            <div class="layui-input-inline">
+                <select class="layui-input" style="cursor: pointer;width: 68px;" id="doConversion">
+                    <option value="y" <?php echo think\Cookie::get("parameDoConversionIframe") == "元"?"selected":"";?>>元</option>
+                    <option value="w" <?php echo think\Cookie::get("parameDoConversionIframe") == "万元"?"selected":"";?>>万元</option>
+                </select>
+            </div>
+        </div>
+        <input type="hidden" id="stock_status" value="{$stock_status}">
+        <input type="hidden" id="task_status" value="{$task_status}">
+        <table class="new-table" style="width: 600px">
+            <thead>
+            <tr>
+                <th>版别</th>
+                <th>预约残损券金额</th>
+                {if $stock_status == 1}
+                <th>审核残损券金额</th>
+                {if $task_status==1 || $task_status==2}
+                <th>实际残损券入库金额
+                </th>
+                {/if}
+                {/if}
+                <th style="width:0;margin: 0;padding: 0"></th>
+            </tr>
+            </thead>
+            <tbody>
+            {volist name="valuta_info" id="vo"}
+            <tr class="low low-sum">
+                <td>
+                    {$vo['valuta_name']}
+                    <input type="hidden" name="valuta_value[{$vo['valuta_code']}]" value="{$vo['valuta_value']}">
+                </td>
+                <td class="doVersionOne">{if isset($vo['amount']) && $vo['amount'] != 0}{$vo['amount']}{else}--{/if}</td>
+                {if $stock_status == 1}
+                <td class="doVersionOne">{if isset($vo['approve_amount']) && $vo['approve_amount'] != 0}{$vo['approve_amount']}{else}--{/if}</td>
+                {if $task_status==1 || $task_status==2}
+                <td class="doVersionOne">{if isset($vo['task_amount']) && $vo['task_amount'] != 0}{$vo['task_amount']}{else}--{/if}</td>
+                {/if}
+                {/if}
+                <td></td>
+            </tr>
+            {/volist}
+            <tr class="low">
+                <td>小计</td>
+                <td class="doVersionOne">{if isset($stock_info['amount'])}{$stock_info['amount']}{else}0{/if}</td>
+                {if $stock_status == 1}
+                <td class="doVersionOne">{if isset($stock_info['approve_amount'])}{$stock_info['approve_amount']}{else}0{/if}</td>
+                {if $task_status==1 || $task_status==2}
+                <td class="doVersionOne">{if isset($stock_info['task_amount'])}{$stock_info['task_amount']}{else}0{/if}</td>
+                {/if}
+                {/if}
+                <td></td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div class="low">
+            <span style="margin-left:20px;">备注</span>
+            <span>
+                {$note}
+            </span>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    $(function(){
+        var stock_status = $('#stock_status').val();
+        var task_status = $('#task_status').val();
+        // 隐藏空行
+        function hideLine(){
+            if($('#hideLine').is(':checked')){
+                $('.low-sum').each(function(){
+                    var hide1 = true;
+                    var hide2 = true;
+                    var hide3 = true;
+                    var w1 = $(this).find('td').eq(1).html();
+                    if(w1 != '--'){
+                        hide1 = false;
+                    }
+                    if(stock_status == 1){
+                        var w2 = $(this).find('td').eq(2).html();
+                        if(w2 != '--'){
+                            hide2 = false;
+                        }
+                        if(task_status == 1 || task_status == 2){
+                            var w3 = $(this).find('td').eq(3).html();
+                            if(w3 != '--'){
+                                hide3 = false;
+                            }
+                        }
+                    }
+                    //console.log(w1)
+                    if( hide1  && hide2  && hide3 ){
+                        $(this).hide();
+                    }
+                })
+            }else{
+                $('.low-sum').each(function(){
+                    $(this).show();
+                })
+            }
+        }
+        hideLine();
+        $('#hideLine').click(function(){
+            hideLine();
+        })
+    });
+    //元万元亿切换
+    $('.doVersionOne').last().attr('number',$('.doVersionOne').last().text());
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+        var jingque = 2;
+        $('.doVersionOne').each(function(i,e){
+            if (!$(this).attr('number')) {
+                $(this).attr('number',$(this).text());
+            }
+            var numberOld = $.trim($('.doVersionOne').last().attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,jingque,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+
+            $('.doVersionOne').last().text(numberNew);
+            if ($(this).attr('number') != '--') {
+                var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+                var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+                if (numberOld >= 1) {
+                    var numberNew = number_format(numberOld,jingque,'.',',') + word;
+                }else{
+                    var numberOld = ''+numberOld+'';
+                    jingque = Number(numberOld.length) - Number(numberOld.indexOf('.')) - 1;
+                    var numberNew = numberOld + word;
+                }
+
+                $(this).text(numberNew);
+            }
+        });
+    });
+    $("#doConversion").trigger("change");
+</script>
+{/block}

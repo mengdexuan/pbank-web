@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <title>人民币冠字号码流通管理平台</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link rel="stylesheet" href="__JS__/layui/css/layui.css">
+    <link rel="stylesheet" href="__CSS__/admin.css">
+    <!--[if lt IE 9]>
+    <script src="__JS__/html5shiv.min.js"></script>
+    <script src="__JS__/respond.min.js"></script>
+    <style>
+        .login .login-form input {color: #000;}
+    </style>
+    <![endif]-->
+</head>
+<body class="login">
+<div class="login-box">
+    <form class="layui-form" action="{:url('admin/login/login')}" method="post">
+        <div class="login-logobox"><img src="{$bank_logo}"> {$bank_name}</div>
+        <input type="text" name="username" required lay-verify="required" autocomplete="off" placeholder="请输入用户名" class="layui-input username">
+        <input type="password" name="password" required lay-verify="required" placeholder="请输入密码" class="layui-input password">
+        <button class="layui-btn" lay-submit lay-filter="*">登 录</button>
+        <img class="login-logo" src="__IMG__/login_logo.png">
+    </form>
+</div>
+<script>
+    // 定义全局JS变量
+    var GV = {
+        current_controller: "admin/{$controller|default=''}/"
+    };
+</script>
+<script src="__JS__/jquery.min.js"></script>
+<script src="__JS__/layui/lay/dest/layui.all.js"></script>
+<script src="__JS__/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,368 @@
+{extend name="base" /}
+{block name="body"}
+<style>
+    .gzh-input {
+        border: none;
+        text-align: center;
+    }
+    .border {
+        border: 1px solid #ccc;
+    }
+    .gzh-pic {
+        width: 145px;
+        height: 33px;
+    }
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <form class="" id="search" action="">
+                <div class="layui-form-item">
+                    <div style="display:inline-block;float:left;">
+                        <div class="layui-input-inline wa date-center">银行名称:</div>
+                        <div class="layui-input-inline wa">
+                            <select name="bankName" id="" class="new-select">
+                                <option value="">请选择商行</option>
+                                {volist name="$banks" id="vo"}
+                                <option data="{$vo.bank_code}" value="{$vo.bank_net_code}" {if $vo.bank_net_code==$bankCode}selected{/if}>{$vo.bank_name}</option>
+                                {/volist}
+                            </select>
+                        </div>
+                        <div class="layui-input-inline wa mr20">
+                            <span id="branchBankCode" style="display:none;">{$branchBankCode}</span>
+                            <select name="sonBankName" id="" class="new-select">
+                                <option value="">请选择网点</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display:inline-block;float:left;">
+                        <div class="layui-input-inline wa date-center">业务时间:</div>
+                        <div class="layui-input-inline date-box">
+                            <input type="text" name="beginTime" placeholder="选择开始日期" id="beginTime"  value="{$start_time}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                        </div>
+                        <div class="layui-input-inline wa date-center">-</div>
+                        <div class="layui-input-inline date-box mr20">
+                            <input type="text" name="beginTime" placeholder="选择结束日期" id="endTime"  value="{$end_time}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                        </div>
+                    </div>
+                    <div class="layui-inline" style="height: 32px;">
+                        <label class="layui-form-label" style="text-align:left;margin-right: -58px;">单位：</label>
+                        <div class="layui-input-inline">
+                            <select class="layui-input" style="cursor: pointer;width: 68px;" id="doConversion">
+                                <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元</option>
+                                <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-input-inline"  style="width: 152px;float: right;">
+                        <button type="button" class="layui-btn layui-btn-small search">查询</button>
+                        <button type="button" class="layui-btn layui-btn-primary layui-btn-small reset">重置</button>
+                    </div>
+                </div>
+            </form>
+            <div id="bank_name_show" style="display:none;"></div>
+            <div class="m-10-0">支出总金额：<span class="bankOutTotal doVersionOne">0</span>&nbsp;&nbsp;&nbsp;&nbsp;坐支金额：<span class="bankInAndOut doVersionOne">0</span>&nbsp;&nbsp;&nbsp;&nbsp;占比<span class="per">0</span>%</div>
+            <div class="m-10-0">坐支冠字号码：</div>
+            <div class="list_content"></div>
+            <div id="page_box"></div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    /*重置功能*/
+    $('.reset').click(function(){
+        $('select[name="bankName"]').val('');
+        $('select[name="sonBankName"]').val('');
+        $('#beginTime').val('');
+        $('#endTime').val('');
+    });
+    /*获取网点*/
+    function get_branch(){
+        var bank_code = $('select[name="bankName"]').find("option:selected").attr('data');
+        var bank_name = $('select[name="bankName"]').find("option:selected").text();
+        var branchBankCode = $('#branchBankCode').html();
+        $('#bank_name_show').html(bank_name);
+        if(bank_code == ''){
+            return false;
+        }
+        var url = "__ROOT__/api/bank/query_bank_branch";
+        var op = {bank_code:bank_code};
+        data_page(url,op,function(result){
+            var data = result.data;
+            console.log(data);
+            var branchs = data.branchs;
+            if(result.err_code == 0){
+                $('select[name="sonBankName"]').html('');
+                html = '<option value="">全部</option>';
+                for(var i = 0; i < branchs.length; i++){
+                    if(branchs[i].branch_code == branchBankCode){
+                        html += '<option value="'+branchs[i].branch_code+'" selected>'+branchs[i].branch_name+'</option>'
+                    }else{
+                        html += '<option value="'+branchs[i].branch_code+'">'+branchs[i].branch_name+'</option>'
+                    }
+                }
+                $('select[name="sonBankName"]').html(html);
+            }else{
+                layer.msg('请求商业银行网点信息失败，请刷新页面后重试！')
+            }
+        });
+    }
+    get_branch();
+    $('select[name="bankName"]').click(function(){
+        get_branch();
+    });
+    $('select[name="sonBankName"]').click(function(){
+        var branch_code = $('select[name="sonBankName"]').val();
+        var branch_name = $('select[name="sonBankName"]').find("option:selected").text();
+        if(branch_code != ''){
+            $('#bank_name_show').html(branch_name);
+        }
+    });
+
+    /*设置日期*/
+    var _type = 'today';
+    var start = {
+        elem:'focus',
+        istoday: true
+        ,choose: function(datas){
+            $('.layui-input-inline').find('.quick').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        }
+    };
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    document.getElementById('endTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+
+    /*查询列表*/
+    function search(curr,num){
+        var bankNetCode = $('select[name="sonBankName"]').val();
+        if(arguments[1] == 0){
+            bankNetCode = $('#branchBankCode').html();
+        }
+        var startTime = $('#beginTime').val();
+        var endTime = $('#endTime').val();
+        if(get_time(startTime) >get_time(endTime)){
+            layer.msg('开始时间不能大于结束时间');
+            return false;
+        }
+        if(bankNetCode == ''){
+            layer.msg('请选择商行网点！');
+            return false;
+        }
+        if(startTime == ''){
+            layer.msg('请选择开始时间！');
+            return false;
+        }
+        if(endTime == ''){
+            layer.msg('请选择结束时间！');
+            return false;
+        }
+        bankNetCode += '';
+        startTime += ' 00:00:00';
+        endTime += ' 23:59:59';
+        layer.load(2);
+        var url = "__ROOT__/api/inout/bank_netbank_search";
+        var op = {
+            bankNetCode: bankNetCode,
+            startTime: startTime,
+            endTime: endTime,
+            page: curr || 1,
+            limit: 20
+        };
+        data_page(url,op,function (result) {
+            console.log(result);
+            layer.closeAll('loading');
+            var data = result.data;
+            if(result.errorCode == 0  && data != null){
+                var list = data.gzhList;
+                $('.bankInAndOut').html(number_format(data.bankInAndOut,2,'.',','));
+                $('.bankOutTotal').html(number_format(data.bankOutTotal,2,'.',','));
+                $('.per').html(data.per);
+            }else{
+                $('.bankInAndOut').html(0);
+                $('.bankOutTotal').html(0);
+                $('.per').html(0);
+            }
+            var html_str = '';
+            $('.list_content').html('');
+            /**
+             * 隐藏《操作》列 修改代码行号：191，202
+             */
+            // html_str += '<table class="new-table"><thead><tr><th>业务类型</th><th>业务时间</th><th>冠字号码</th><th>冠字号图片</th><th>机构编码</th><th>业务编号</th><th>操作</th></tr></thead>';
+            html_str += '<table class="new-table"><thead><tr><th>业务类型</th><th>业务时间</th><th>冠字号码</th><th>机构编码</th><th>业务编号</th></tr></thead>';
+            if(result.errorCode == 0  && list != null){
+                for(var i = 0; i <list.length; i++){
+                    html_str += '<tbody><tr class="low"><td>支出</td>';
+                    html_str += '<td>'+list[i].bisTime+'</td>';
+                    html_str += '<td class="gzh-td"><input readonly type="text" class="gzh-input layui-input" value="'+list[i].fullGzh+'"></td>';
+                    // html_str += '<td style="padding:0;"><img class="gzh-pic" src="'+list[i].gzhImagePath +'"></td>';
+                    html_str += '<td>'+ list[i].netCode +'</td>';
+                    html_str += '<td>'+ list[i].businessInfo +'</td>';
+                    // html_str += '<td><a href="javascript:;" class="bis_detail" data-time="'+list[i].bisTime+'" data-type="'+list[i].businessType +'" data-net-bank-code="'+list[i].netCode+'" data-business-info="'+list[i].businessInfo+'">'+ list[i].businessInfo +'</a></td>';
+                    // 隐藏《操作》列
+                    // html_str += '<td><a href="javascript:;" class="modify">修改</a><a href="javascript:;" data="'+list[i].fullGzh+'" class="cancel red mr20" style="display:none;">取消</a><a style="display:none;" href="javascript:;" class="edit" data-time="'+list[i].bisTime+'" data-type="'+list[i].businessType +'" data-id="'+list[i].id+'" data-info="'+list[i].businessInfo+'">确定</a></td>';
+                    html_str += '</tr></tbody>';
+                }
+                html_str += '</table>';
+                laypage({
+                    cont: 'page_box',
+                    pages: data.totalPage,
+                    curr: curr || 1,
+                    jump: function(obj, first){
+                        if(!first){
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                html_str = '<table class="new-table"><thead><tr><th>业务类型</th><th>业务时间</th><th>冠字号码</th><th>冠字号图片</th><th>机构编码</th><th>业务编号</th></tr></thead><tbody><tr class="low"><td colspan="6"  class="text-center">数据错误：'+result.err_msg+'</td></tr></tbody></table>';
+            }
+            $('.list_content').html(html_str);
+            $('.list_content').hide();
+            $('.list_content').fadeIn(500);
+            $("#doConversion").trigger("change");
+            /*修改GZH*/
+            $('.modify').each(function(){
+                $(this).click(function(){
+                    $(this).parent('td').find('.cancel').show();
+                    $(this).parent('td').find('.edit').show();
+                    $(this).parent('td').parent('tr').find('.gzh-td').find('.gzh-input').removeAttr('readonly');
+                    $(this).parent('td').parent('tr').find('.gzh-td').find('.gzh-input').addClass('border');
+                    $(this).hide();
+                })
+            });
+            $('.cancel').click(function(){
+                $(this).click(function(){
+                    $(this).parent('td').find('.edit').hide();
+                    $(this).parent('td').find('.modify').show();
+                    $(this).parent('td').parent('tr').find('.gzh-td').find('.gzh-input').val($(this).attr('data'));
+                    $(this).parent('td').parent('tr').find('.gzh-td').find('.gzh-input').attr('readonly','readonly');
+                    $(this).parent('td').parent('tr').find('.gzh-td').find('.gzh-input').removeClass('border');
+                    $(this).hide();
+                })
+            });
+            $('.edit').each(function(){
+                $(this).click(function(){
+                    var id = $(this).attr('data-id');
+                    var gzh = $(this).parent('td').parent('tr').find('.gzh-td').find('.gzh-input').val();
+                    /*var date = new Date();
+                    date = date.Format("yyyy-MM-dd");*/
+                    var bankNetCode = $('select[name="sonBankName"]').val();
+                    var businessInfo = $(this).attr('data-info');
+                    var bussinessType = $(this).attr('data-type');
+                    var date = $(this).attr('data-time');
+                    console.log('enter - edit');
+                    console.log(gzh);
+                    $.ajax({
+                        url: '__ROOT__/api/inout/update_netbank_inout_data',
+                        data:{
+                            id: id,
+                            gzh: gzh,
+                            dateTime: date,
+                            bankNetCode: bankNetCode,
+                            businessInfo: businessInfo,
+                            bussinessType: bussinessType
+                        },
+                        type: "post",
+                        data_type:'json',
+                        success: function (info) {
+                            console.log(info);
+                            var bankCode = $('select[name="bankName"]').val()
+                            var branchBankCode = $('select[name="sonBankName"]').val();
+                            var startTime = $('#beginTime').val();
+                            var endTime = $('#endTime').val();
+                            if (info.errorCode == 0) {
+                                setTimeout(function () {
+                                    location.href = '__ROOT__/admin/dot_cash/index/bankCode/'+bankCode+'/branchBankCode/'+branchBankCode+'/startTime/'+startTime+'/endTime/'+endTime+'.html';
+                                    /*location.reload();*/
+                                }, 1000);
+                                layer.msg('修改成功');
+                            }else {
+                                layer.msg(info.message);
+                            }
+                        }
+                    });
+                })
+            });
+
+            // $('.bis_detail').each(function(){
+            //     $(this).click(function(){
+            //         var netBankCode = $(this).attr('data-net-bank-code');
+            //         var businessType = $(this).attr('data-type');
+            //         var bisNo = $(this).attr('data-business-info');
+            //         var bisDateTime = $(this).attr('data-time');
+            //         // location.href = '__ROOT__/admin/business/view/netBankCode/'+netBankCode+'/businessType/'+businessType+'/bisNo/'+bisNo+'/bisDateTime/'+bisDateTime+'.html';
+            //     })
+            // })
+        });
+    };
+
+
+
+
+    //运行
+    //search();
+    var bankNetCode = $('select[name="sonBankName"]').val();
+    if ( bankNetCode == '') {
+        bankNetCode = $('#branchBankCode').html();
+    }
+    if(bankNetCode!=''){
+        search(1,0);
+    }
+    $('.search').click(function () {
+        search();
+    });
+    //鼠标悬停提示特效
+    // $(".doVersionOne").hover(function() {
+    //     openMsg($(this));
+    // }, function() {
+    //     // layer.close(subtips);
+    // });
+    // $(".doVersionTow").hover(function() {
+    //     openMsg($(this));
+    // }, function() {
+    //     // layer.close(subtips);
+    // });
+    // function openMsg(_this) {
+    //     var num = doVersionOne(_this);
+    //     // subtips = layer.tips(num, '.doVersionOne',{tips:[1,'#ff6700'],time: 30000});
+    // } 
+    // 元万元亿切换
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+
+        $('.doVersionOne').each(function(i,e){
+            if (!$(this).attr('number')) {
+                $(this).attr('number',$(this).text());
+            }
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+            
+            $(this).text(numberNew);                
+        });
+    });
+</script>
+{/block}

@@ -1,0 +1,211 @@
+{extend name="base" /}
+{block name="css"}
+<style>
+    .layui-input, .layui-textarea{
+        width: 90%;
+    }
+</style>
+{/block}
+{block name="body"}
+<div class="layui-tab layui-tab-brief">
+    <div class="layui-tab-content">
+        <div class="title-box" style="margin: 10px 0;">
+            <div class="title">库存现金余量报表</div>
+            <div class="link"></div>
+        </div>
+
+        {if $is_stock}
+        <div class="layui-form-item green">
+            今天库存上报已审核,审核后无法再次修改，次日可继续提交上报。
+        </div>
+        {else}
+            <a class="layui-btn layui-btn-small" href="{:url('iframe/balance/add',['bank_code'=>$bank_key])}">库存上报</a>
+        {/if}
+        <div class="title-box" style="margin: 10px 0;">
+            <div class="title">上报记录</div>
+            <div class="link"></div>
+        </div>
+        <div class="layui-form-item" style="margin-top: 10px;">
+            <button id="show_all" class="layui-btn layui-btn-small" style="float:left;margin-right:15px;">全部</button>
+            <div class="layui-input-inline" style="width: 125px;">
+                <input type="text" name="beginTime" placeholder="选择日期" id="beginTime" value=""  autocomplete="off" class="layui-input laydate-icon choice_date">
+            </div>
+            <div style="display: inline-block;float: left;height: 32px;line-height: 32px;margin-right: 10px;">----</div>
+            <div class="layui-input-inline" style="width: 125px;">
+                <input type="text" name="endTime" placeholder="选择日期" id="endTime" value=""  autocomplete="off" class="layui-input laydate-icon choice_date">
+            </div>
+            <button id="show_part" class="layui-btn layui-btn-small">查询</button>
+            <button id="show_clear" class="layui-btn layui-btn-small">清除</button>
+            <div class="layui-inline" style="height: 32px;">
+                <label class="layui-form-label" style="text-align:left;margin-right: -50px;">单位：</label>
+                <div class="layui-input-inline">
+                    <select class="layui-input" style="cursor: pointer;width: 64px;" id="doConversion">
+                        <option value="y" <?php echo think\Cookie::get("parameDoConversionIframe") == "元"?"selected":"";?>>元</option>
+                        <option value="w" <?php echo think\Cookie::get("parameDoConversionIframe") == "万元"?"selected":"";?>>万元</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <table class="new-table" id="data_table">
+            <thead>
+            <tr>
+                <th>填报日期</th>
+                <th class="txtR">已报完整券</th>
+                <th class="txtR">已报残损券</th>
+                <th>最后修改时间</th>
+                <th>状态</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td colspan="6" class="text-center">查询中</td>
+            </tr>
+            </tbody>
+        </table>
+        <div id="page_box"></div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    function search(curr){
+        var begin_time = $('#beginTime').val();
+        var end_time = $('#endTime').val();
+        layer.load(2);
+        var url = "__ROOT__/api/bank/query_buss_stock_records";
+        var op = {
+            bank_code:'{$bank_code}',
+            cur_page: curr || 1,
+            start_date: begin_time,
+            end_date: end_time
+        };
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var list = data.stock_records;
+            var html_str = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < list.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td>"+list[i].stock_date+"</td>";
+                    html_str = html_str + "<td class='txtR doVersionOne' number="+list[i].full_amount_str+">"+list[i].full_amount_str+"</td>";
+                    html_str = html_str + "<td class='txtR doVersionTow' number="+list[i].damaged_amount_str+">"+list[i].damaged_amount_str+"</td>";
+                    html_str = html_str + "<td>"+list[i].op_time+"</td>";
+                    var status = '';
+                    if(list[i].stock_status == 0){
+                        status = 'red';
+                    }
+                    html_str = html_str + "<td><span class='"+status+"'>"+list[i].stock_status_str+"</span></td>";
+                    html_str = html_str + '<td><a href="__ROOT__/iframe/balance/info/bank_code/{$bank_key}/query_date/'+list[i].stock_date+'.html" >查看</a></td>';
+                    html_str = html_str + '</tr>';
+                }
+
+                if(html_str == ''){
+                    html_str = '<td colspan="4" style="text-align: center">暂无数据</td>';
+                }
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                html_str = '<tr><td colspan="5" class="text-center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="location=location">刷新</a></td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+            $("#doConversion").trigger("change");
+        });
+    };
+    //运行
+    search();
+    //全部
+    $('#show_all').click(function(){
+        search();
+        $('#beginTime').val('');
+        $('#endTime').val('')
+    });
+    //某个时间段
+    var _type = 'today';
+    var start = {
+        elem:'focus',
+        istoday: true
+        ,choose: function(datas){
+            $('.layui-input-inline').find('.layui-btn').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        }
+    };
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    document.getElementById('endTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    $('#show_part').click(function(){
+        console.log($('#beginTime').val());
+        console.log($('#endTime').val());
+        var start_date = $('#beginTime').val();
+        var end_date = $('#endTime').val();
+        if(get_time(start_date) >get_time(end_date)){
+            layer.msg('开始时间不能大于结束时间');
+            return false;
+        }
+        if(start_date == '' && end_date == ''){
+            layer.msg('请选择开始时间与结束时间');
+            return false;
+        }
+        search();
+    });
+    //清除
+    $('#show_clear').click(function(){
+        search();
+        $('#beginTime').val('');
+        $('#endTime').val('')
+    });
+    //元万元亿切换
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+
+        $('.doVersionOne').each(function(i,e){
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+            
+            $(this).text(numberNew);                
+        });
+        $('.doVersionTow').each(function(i,e){
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+            
+            $(this).text(numberNew);                
+        });
+    });
+    $("#doConversion").trigger("change");
+</script>
+{/block}

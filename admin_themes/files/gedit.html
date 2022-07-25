@@ -1,0 +1,231 @@
+{extend name="base" /}
+{block name="body"}
+<style type="text/css">
+    .layui-btn{
+        margin-right: 54px;
+    }
+</style>
+<div class="layui-body">
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <div class="title-box">
+                <div class="title">GZH生成策略</div>
+            </div>
+            {if $result['success']}
+            <form class="layui-form" method="post">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">业务类型:</label>
+                    <div class="layui-input-block">
+                        <input type="checkbox" title="全部" lay-skin="primary" id="c_all" lay-filter="c_all">
+                        <input type="checkbox" name="bizType" lay-skin="primary" lay-filter="c_one" class="bizType"  title="向人行交款" value="3" {if in_array(3,explode(',',$result['data']['bizType']))}checked{/if}>
+                        <input type="checkbox" name="bizType" lay-skin="primary" lay-filter="c_one" class="bizType"  title="从人行取款" value="4" {if in_array(4,explode(',',$result['data']['bizType']))}checked{/if}>
+                        <input type="checkbox" name="bizType" lay-skin="primary" lay-filter="c_one" class="bizType"  title="跨行调款" value="0" {if in_array('0',explode(',',$result['data']['bizType']),true)}checked{/if}>
+                        <input type="checkbox" name="bizType" lay-skin="primary" lay-filter="c_one" class="bizType"  title="被代理行取现" value="2" {if in_array(2,explode(',',$result['data']['bizType']))}checked{/if}>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">生成方式:</label>
+                    <div class="layui-input-block">
+                      <input type="radio" name="gzhType" value="1" title="任务完成后实时生成" {if $result['data']['gzhType'] == 1}checked{/if}>
+                      <input type="radio" name="gzhType" value="2" title="定时任务" {if $result['data']['gzhType'] == 2}checked{/if}>
+                      <input type="radio" name="gzhType" value="3" title="不生成" {if $result['data']['gzhType'] == 3}checked{/if}>
+                    </div>
+                </div>
+                <div class="layui-form-item hiddens" {if $result['data']['gzhType'] != 2}hidden{/if}>
+                    <label class="layui-form-label">Cron表达式:</label>
+                    <div class="layui-input-block" style="width: 360px;">
+                      <input type="text" name="gzhCron" placeholder="Cron表达式" autocomplete="off" class="layui-input" value="{$result['data']['gzhCron']}">
+                    </div><img src="__IMG__/wen.png" width="22px;" style="position:absolute;top:172px;left:473px;cursor: pointer;" class="wenImg">
+                </div>
+                <div class="layui-form-item hiddens" {if $result['data']['gzhType'] != 2}hidden{/if}>
+                    <label class="layui-form-label">生成时间:</label>
+                    <div class="layui-input-block">
+                        <div class="layui-input-inline date-box">
+                            <input type="text" name="beginTime" placeholder="生成时间" id="beginTime"  value="{:date('Y-m-d',strtotime($result['data']['gzhCreateBeginTime']))}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item shows"{if $result['data']['gzhType'] == 3}hidden{/if}>
+                    <label class="layui-form-label">保存目录:</label>
+                    <div class="layui-input-block" style="width: 360px;">
+                      <input type="text" name="gzhPath" placeholder="保存目录" autocomplete="off" class="layui-input" value="{$result['data']['gzhPath']}">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                      <button type="button" class="layui-btn edit" lay-submit>确定</button>
+                      <button type="reset" class="layui-btn" id="reset">取消</button>
+<!--                      <a href="{:url('/admin/files/gzh')}"><button type="button" class="layui-btn layui-btn-primary">返回列表</button></a>-->
+                    </div>
+                </div>
+            </form>
+            {else}
+            <div>获取数据失败,稍后尝试</div>
+            {/if}
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script src="__JS__/layui/layui.js"></script>
+<script>
+    var indexTips = 0;
+    var eidtId = "{$result['data']['id']}";
+    //时间插件
+    var start = {
+        elem:'focus',
+        istoday: true
+        ,choose: function(datas){
+            $('.layui-input-inline').find('.quick').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        }
+    };
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };  
+
+    //显示对应增加项
+    $(document).on("click",".layui-form-radio",function(){
+        methods = $(this).prev().val();
+        if (methods == 1) {
+            layer.close(indexTips);
+            $('.hiddens').hide();
+            $('.shows').show();
+            $('.removewenImg').addClass('wenImg');
+            $('.removewenImg').removeClass('removewenImg');
+        }else if (methods == 2) {
+            $('.hiddens').show();
+            $('.shows').show();
+        }else if (methods == 3) {
+            layer.close(indexTips);
+            $('.hiddens').hide();
+            $('.shows').hide();
+            $('.removewenImg').addClass('wenImg');
+            $('.removewenImg').removeClass('removewenImg');
+        }
+    });
+    $(document).on("click","#reset",function(){
+        location.href='';
+    });
+    // $('#reset').click(function(){
+    //     layer.close(indexTips);
+    //     $('.removewenImg').addClass('wenImg');
+    //     $('.removewenImg').removeClass('removewenImg');
+    // });
+
+    //生成gzh文件
+    $('.edit').click(function(){
+        layer.close(indexTips);
+        $('.removewenImg').addClass('wenImg');
+        $('.removewenImg').removeClass('removewenImg');
+        var gzhCreateBeginTime = $.trim($('#beginTime').val()) + ' 00:00:00';
+        var gzhPath = $('input[name="gzhPath"]').val();
+        var gzhCron = $('input[name="gzhCron"]').val();
+        var gzhPath = $('input[name="gzhPath"]').val();
+        var gzhType = $('.layui-form-radioed').prev().val();
+        var bizType = '';
+        $(".bizType").each(function(){
+            if ($(this).prop('checked') === true) {
+                var thisVal = $(this).val();
+                bizType += ','+thisVal;
+            }
+        });
+        var bizType = bizType.substring(1);
+        layer.load(2);
+        setTimeout(function(){
+          layer.closeAll('loading');
+        },3500);
+        $.ajax({
+            url: '__ROOT__/api/bank/filesGzhEdit',
+            data:{
+                id:eidtId,
+                bizType:bizType,
+                gzhType:gzhType,
+                gzhCron:gzhCron,
+                gzhPath:gzhPath,
+                gzhCreateBeginTime:gzhCreateBeginTime
+            },
+            type: "post",
+            data_type:'json',
+            success:function(res){
+                if (res.success) {
+                    layer.msg('操作成功');
+                }else{
+                    layer.msg(res.msg || '稍后尝试');return false;
+                }
+                setTimeout(function(){
+                    location.href='';
+                },3500);
+            },
+            error:function(){
+                layer.msg('稍后尝试');
+            }
+        });
+    });
+
+    //cron说明
+    $(document).on('click','.wenImg',function(){
+        indexTips = layer.tips('<div>Cron – Cron 表达式是由6或7个字段组成的序列，用空格分隔：秒、分钟、小时、日、月、星期。月份和星期可以用英文名称的前三个字母表示。例如：<br/> ➢ 0 0 * * * * – 每天每小时的开始时刻<br/> ➢ */10 * * * * * – 每 10 秒钟<br/> ➢ 0 0 8-10 * * * – 每天 8 点、9 点和 10 点<br/> ➢ 0 0/30 8-10 * * * – 每天 8:00、 8:30、 9:00、 9:30 和 10 点<br/> ➢ 0 0 9-17 * * MON-FRI – 工作日每天 9 点到 17 点的整点时刻<br/> ➢ 0 0 0 25 DEC ? – 每个圣诞节的午夜 12 点<br/></div>','.wenImg',{tips:[2,'#ff6700'],time: 0});
+        $(this).removeClass('wenImg');
+        $(this).addClass('removewenImg');
+    });
+    $(document).on('click','.removewenImg',function(){
+        layer.close(indexTips);
+        $(this).addClass('wenImg');
+        $(this).removeClass('removewenImg');
+    });
+    // $(".layui-form-radio").trigger("click");
+</script>
+<script type="text/javascript">
+layui.use('form', function () {
+        var form = layui.form();
+        var item = $(".bizType");
+        //全选
+        form.on('checkbox(c_all)', function (data) {
+            var a = data.elem.checked;
+            if (a == true) {
+                $(".bizType").prop("checked", true);
+                form.render('checkbox');
+            } else {
+                $(".bizType").prop("checked", false);
+                form.render('checkbox');
+            }
+        });
+        //反选
+        form.on('checkbox(f_all)', function (data) {
+            item.each(function () {
+                if ($(this).prop("checked")) {
+                    $(this).prop("checked", false);
+                } else {
+                    $(this).prop("checked", true);
+                }
+            })
+            form.render('checkbox');
+        });
+        //有一个未选中全选取消选中
+        form.on('checkbox(c_one)', function (data) {
+            for (var i = 0; i < item.length; i++) {
+                if (item[i].checked == false) {
+                    $("#c_all").prop("checked", false);
+                    form.render('checkbox');
+                    break;
+                }
+            }
+            //如果都勾选了  勾上全选
+            checkAll();
+        });
+        checkAll();
+        function checkAll() {
+            var  all=item.length;
+            for (var i = 0; i < item.length; i++) {
+                if (item[i].checked == true) {
+                    all--;
+                }
+            }
+            if(all==0){
+                $("#c_all").prop("checked", true);
+                form.render('checkbox');}
+        }
+});
+</script>
+{/block}

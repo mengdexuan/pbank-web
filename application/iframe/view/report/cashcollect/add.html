@@ -1,0 +1,645 @@
+{extend name="base" /}
+{block name="body"}
+<!--tab标签-->
+<style>
+    .report {
+        display: inline-block;
+        width: 50%;
+        float: left;
+    }
+    input {
+        background: none;
+        border: 1px solid #333;
+    }
+    .data_row input,
+    .data_row2 input{
+        width: 100%;
+    }
+    .data_row input[type="text"],
+    .data_row2 input[type="text"]{
+        border: none;
+    }
+    .table_ul li {
+        display: inline-block;
+        width: 33.3%;
+        height: 32px;
+        line-height: 32px;
+        float: left;
+    }
+</style>
+<div class="layui-tab layui-tab-brief">
+    <div class="layui-tab-content">
+        <span class="layui-breadcrumb">
+            <a href="{:url('iframe/report/index',['bank_code'=>$bank_key,'bankCode'=>$bank_code])}">报表列表</a>
+            <a href="{:url('iframe/report/list',['reportNum'=>$reportNum,'bank_code'=>$bank_key,'bankCode'=>$bank_code])}">{:show_report_name($reportNum)}</a>
+            <a><cite>填报</cite></a>
+        </span>
+        <div style="clear:both;"></div>
+        <div style="font-size:18px;text-align:center;font-weight:bold;margin-bottom:20px;">{$year}年第{$quarter}季度{:show_report_name($reportNum)}</div>
+        {if $rowlist2['out'] != null || $rowlist2['in'] != null}
+        <table class="layui-table report report1">
+            <thead>
+            <tr>
+                <th rowspan="2" width="16%">项目名称</th>
+                <th colspan="2" width="">金额（元）</th>
+                <th colspan="2" width="">同比增减（元）</th>
+                <th colspan="2" width="">同比涨幅（%）</th>
+                <th colspan="2" width="">占比（%）</th>
+            </tr>
+            <tr>
+                <th width="12%">本期</th>
+                <th width="12%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+            </tr>
+            </thead>
+            <tbody>
+            {volist name="$rowlist2['in']" id="vo"}
+            <tr class="data_row" data="{$i}">
+                <td class="c"><input type="text" class="rowCode" value="{$vo['rowCode']}" readonly style="display:none;">{:get_report_name($reportNum,$vo['rowCode'])}</td>
+                <td class="c"><input data-type="{$i}"  data-list="1" data-before="{:number_to_word2($vo['amount'])}" type="number" min="0" max="99999999" class="amount" value=""></td>
+                <td class="c"><input data-type="{$i}"  data-list="1" data-before="{:number_to_word2($vo['totalAmount'])}" type="number" min="0" max="99999999" class="totalAmount" value=""></td>
+                <td class="c"><input type="text" class="curAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="" readonly></td>
+            </tr>
+            {/volist}
+            <tr>
+                <td class="c"><input type="text" class="rowCode" value="" readonly="" style="display:none;">净投放（+）或净回笼（-）</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+            </tr>
+            </tbody>
+        </table>
+        <table class="layui-table report report2">
+            <thead>
+            <tr>
+                <th rowspan="2" width="16%">项目名称</th>
+                <th colspan="2" width="">金额（元）</th>
+                <th colspan="2" width="">同比增减（元）</th>
+                <th colspan="2" width="">同比涨幅（%）</th>
+                <th colspan="2" width="">占比（%）</th>
+            </tr>
+            <tr>
+                <th width="12%">本期</th>
+                <th width="12%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+            </tr>
+            </thead>
+            <tbody>
+            {volist name="$rowlist2['out']" id="vo"}
+            <tr class="data_row" data="{$i}">
+                <td class="c"><input type="text" class="rowCode" value="{$vo['rowCode']}" readonly style="display:none;">{:get_report_name($reportNum,$vo['rowCode'])}</td>
+                <td class="c"><input data-type="{$i}" data-list="2" data-before="{:number_to_word2($vo['amount'])}" type="number" min="0" max="99999999" class="amount" value=""></td>
+                <td class="c"><input data-type="{$i}" data-list="2" data-before="{:number_to_word2($vo['totalAmount'])}" type="number" min="0" max="99999999" class="totalAmount" value=""></td>
+                <td class="c"><input type="text" class="curAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="" readonly></td>
+            </tr>
+            {/volist}
+            <tr>
+                <td class="c"><input type="text" class="rowCode" value="" readonly="" style="display:none;">净投放（+）或净回笼（-）</td>
+                <td class="amountAll"></td>
+                <td class="totalAmountAll"></td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+            </tr>
+            </tbody>
+        </table>
+        {else}
+        <table class="layui-table report report1">
+            <thead>
+            <tr>
+                <th rowspan="2" width="16%">项目名称</th>
+                <th colspan="2" width="">金额（元）</th>
+                <th colspan="2" width="">同比增减（元）</th>
+                <th colspan="2" width="">同比涨幅（%）</th>
+                <th colspan="2" width="">占比（%）</th>
+            </tr>
+            <tr>
+                <th width="12%">本期</th>
+                <th width="12%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr class="data_row" data="1">
+                <td class="c"><input type="text" class="rowCode" value="R00070001" readonly="" style="display:none;">一、对公收入</td>
+                <td class="c"><input data-type="1" data-list="1" data-before="0" type="number" min="0" max="99999999" class="amount" value=""></td>
+                <td class="c"><input data-type="1" data-list="1" data-before="0" type="number" min="0" max="99999999" class="totalAmount" value=""></td>
+                <td class="c"><input type="text" class="curAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="" readonly></td>
+            </tr>
+            <tr class="data_row" data="2">
+                <td class="c"><input type="text" class="rowCode" value="" readonly="" style="display:none;">二、对私收入</td>
+                <td class="c"><input data-type="2" data-list="1" data-before="0" type="number" min="0" max="99999999" class="amount" value="" readonly></td>
+                <td class="c"><input data-type="2" data-list="1" data-before="0" type="number" min="0" max="99999999" class="totalAmount" value="" readonly></td>
+                <td class="c"><input type="text" class="curAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="" readonly></td>
+            </tr>
+            <tr class="data_row" data="3">
+                <td class="c"><input type="text" class="rowCode" value="R00070002" readonly="" style="display:none;">其中：柜面业务收入</td>
+                <td class="c"><input data-type="3" data-list="1" data-before="0" type="number" min="0" max="99999999" class="amount" value=""></td>
+                <td class="c"><input data-type="3" data-list="1" data-before="0" type="number" min="0" max="99999999" class="totalAmount" value=""></td>
+                <td class="c"><input type="text" class="curAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="" readonly></td>
+            </tr>
+            <tr class="data_row" data="4">
+                <td class="c"><input type="text" class="rowCode" value="R00070003" readonly="" style="display:none;">自助设备收入</td>
+                <td class="c"><input data-type="4" data-list="1" data-before="0" type="number" min="0" max="99999999" class="amount" value=""></td>
+                <td class="c"><input data-type="4" data-list="1" data-before="0" type="number" min="0" max="99999999" class="totalAmount" value=""></td>
+                <td class="c"><input type="text" class="curAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="" readonly></td>
+            </tr>
+            <tr class="data_row" data="5">
+                <td class="c"><input type="text" class="rowCode" value="" readonly="" style="display:none;">外部项目收入合计</td>
+                <td class="c"><input data-type="5" data-list="1" data-before="0" type="number" min="0" max="99999999" class="amount" value="" readonly></td>
+                <td class="c"><input data-type="5" data-list="1" data-before="0" type="number" min="0" max="99999999" class="totalAmount" value="" readonly></td>
+                <td class="c"><input type="text" class="curAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="" readonly></td>
+            </tr>
+            <tr class="data_row" data="6">
+                <td class="c"><input type="text" class="rowCode" value="R00070004" readonly="" style="display:none;">同业间现金存入</td>
+                <td class="c"><input data-type="6" data-list="1" data-before="0" type="number" min="0" max="99999999" class="amount" value=""></td>
+                <td class="c"><input data-type="6" data-list="1" data-before="0" type="number" min="0" max="99999999" class="totalAmount" value=""></td>
+                <td class="c"><input type="text" class="curAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="" readonly></td>
+            </tr>
+            <tr class="data_row" data="7">
+                <td class="c"><input type="text" class="rowCode" value="" readonly="" style="display:none;">现金收入总计</td>
+                <td class="c"><input data-type="7" data-list="1" data-before="0" type="number" min="0" max="99999999" class="amount" value=""></td>
+                <td class="c"><input data-type="7" data-list="1" data-before="0" type="number" min="0" max="99999999" class="totalAmount" value=""></td>
+                <td class="c"><input type="text" class="curAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="" readonly></td>
+            </tr>
+            <tr>
+                <td class="c"><input type="text" class="rowCode" value="" readonly="" style="display:none;">净投放（+）或净回笼（-）</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+            </tr>
+            </tbody>
+        </table>
+        <table class="layui-table report report2">
+            <thead>
+            <tr>
+                <th rowspan="2" width="16%">项目名称</th>
+                <th colspan="2" width="">金额（元）</th>
+                <th colspan="2" width="">同比增减（元）</th>
+                <th colspan="2" width="">同比涨幅（%）</th>
+                <th colspan="2" width="">占比（%）</th>
+            </tr>
+            <tr>
+                <th width="12%">本期</th>
+                <th width="12%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+                <th width="10%">本期</th>
+                <th width="10%">年累计</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr class="data_row" data="1">
+                <td class="c"><input type="text" class="rowCode" value="R00070005" readonly="" style="display:none;">一、对公支出</td>
+                <td class="c"><input data-type="1" data-list="2" data-before="0" type="number" min="0" max="99999999" class="amount" value=""></td>
+                <td class="c"><input data-type="1" data-list="2" data-before="0" type="number" min="0" max="99999999" class="totalAmount" value=""></td>
+                <td class="c"><input type="text" class="curAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="" readonly></td>
+            </tr>
+            <tr class="data_row" data="2">
+                <td class="c"><input type="text" class="rowCode" value="" readonly="" style="display:none;">二、对私支出</td>
+                <td class="c"><input data-type="2" data-list="2" data-before="0" type="number" min="0" max="99999999" class="amount" value="" readonly></td>
+                <td class="c"><input data-type="2" data-list="2" data-before="0" type="number" min="0" max="99999999" class="totalAmount" value="" readonly></td>
+                <td class="c"><input type="text" class="curAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="" readonly></td>
+            </tr>
+            <tr class="data_row" data="3">
+                <td class="c"><input type="text" class="rowCode" value="R00070006" readonly="" style="display:none;">其中：柜面业务支出</td>
+                <td class="c"><input data-type="3" data-list="2" data-before="0" type="number" min="0" max="99999999" class="amount" value=""></td>
+                <td class="c"><input data-type="3" data-list="2" data-before="0" type="number" min="0" max="99999999" class="totalAmount" value=""></td>
+                <td class="c"><input type="text" class="curAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="" readonly></td>
+            </tr>
+            <tr class="data_row" data="4">
+                <td class="c"><input type="text" class="rowCode" value="R00070007" readonly="" style="display:none;">自助设备支出</td>
+                <td class="c"><input data-type="4" data-list="2" data-before="0" type="number" min="0" max="99999999" class="amount" value=""></td>
+                <td class="c"><input data-type="4" data-list="2" data-before="0" type="number" min="0" max="99999999" class="totalAmount" value=""></td>
+                <td class="c"><input type="text" class="curAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="" readonly></td>
+            </tr>
+            <tr class="data_row" data="5">
+                <td class="c"><input type="text" class="rowCode" value="" readonly="" style="display:none;">外部项目支出合计</td>
+                <td class="c"><input data-type="5" data-list="2" data-before="0" type="number" min="0" max="99999999" class="amount" value="" readonly></td>
+                <td class="c"><input data-type="5" data-list="2" data-before="0" type="number" min="0" max="99999999" class="totalAmount" value="" readonly></td>
+                <td class="c"><input type="text" class="curAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="" readonly></td>
+            </tr>
+            <tr class="data_row" data="6">
+                <td class="c"><input type="text" class="rowCode" value="R00070008" readonly="" style="display:none;">同业间现金支出</td>
+                <td class="c"><input data-type="6" data-list="2" data-before="0" type="number" min="0" max="99999999" class="amount" value=""></td>
+                <td class="c"><input data-type="6" data-list="2" data-before="0" type="number" min="0" max="99999999" class="totalAmount" value=""></td>
+                <td class="c"><input type="text" class="curAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="" readonly></td>
+            </tr>
+            <tr class="data_row" data="7">
+                <td class="c"><input type="text" class="rowCode" value="" readonly="" style="display:none;">现金支出总计</td>
+                <td class="c"><input data-type="7" data-list="2" data-before="0" type="number" min="0" max="99999999" class="amount" value=""></td>
+                <td class="c"><input data-type="7" data-list="2" data-before="0" type="number" min="0" max="99999999" class="totalAmount" value=""></td>
+                <td class="c"><input type="text" class="curAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="totalAddSub" value="" readonly></td>
+                <td class="c"><input type="text" class="curRise" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRise" value="" readonly></td>
+                <td class="c"><input type="text" class="curRatio" value="" readonly></td>
+                <td class="c"><input type="text" class="totalRatio" value="" readonly></td>
+            </tr>
+            <tr>
+                <td class="c"><input type="text" class="rowCode" value="" readonly="" style="display:none;">净投放（+）或净回笼（-）</td>
+                <td class="amountAll"></td>
+                <td class="totalAmountAll"></td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+                <td class="c">--</td>
+            </tr>
+            </tbody>
+        </table>
+        {/if}
+
+
+
+
+        <ul  class="table_ul">
+            <li>全辖银行营业网点（个）：<input type="number" min="0" max="99999999" class="ratioInput outlets" value=""></li>
+            <li>抽样银行营业网点（个）：<input type="number" min="0" max="99999999" class="ratioInput sampleOutlets" value=""></li>
+            <li>抽样比例（%）：<span class="ratio"></span></li>
+        </ul>
+
+        <ul class="table_ul">
+            <li>全辖银行自助机具（台）：<input type="number" min="0" max="99999999" class="ratioInput2 selfHelp" value=""></li>
+            <li>抽样银行自助机具（台）：<input type="number" min="0" max="99999999" class="ratioInput2 sampleSelfHelp" value=""></li>
+            <li>抽样比例（%）：<span class="ratio2"></span></li>
+        </ul>
+    </div>
+</div>
+<button class="layui-btn layui-btn-small" id="submit" style="display:block;margin:0 auto;">提交</button>
+{/block}
+
+{block name="script"}
+<script>
+    $(function(){
+        /*去除class*/
+        $('.report').each(function(){
+            var tr3 = $(this).find('tr').eq(3);
+            tr3.removeClass('data_row').addClass('data_row2').addClass('privateSum');
+            tr3.find('input[type="number"]').attr('type','text').attr('readonly','readonly');
+
+            var tr6 = $(this).find('tr').eq(6);
+            tr6.removeClass('data_row').addClass('data_row2').addClass('projectSum');
+            tr6.find('input[type="number"]').attr('type','text').attr('readonly','readonly');
+
+            var tr8 = $(this).find('tr').eq(8);
+            tr8.removeClass('data_row').addClass('data_row2').addClass('cashTotalSum');
+            tr8.find('input[type="number"]').attr('type','text').attr('readonly','readonly');
+        })
+        /*对私合计*/
+        function privateSum(m,inputClass){
+            var m = m;
+            var inputClass = inputClass;
+            var a = $(m).find('tr[data="1"]').find(inputClass).val();
+            var b = $(m).find('tr[data="3"]').find(inputClass).val();
+            var c = $(m).find('tr[data="4"]').find(inputClass).val();
+            var d = $(m).find('tr[data="6"]').find(inputClass).val();
+            console.log(a);
+            console.log(b);
+            console.log(c);
+            console.log(d);
+            var l = (Number (b)*10000 + Number(c)*10000)/10000;
+            var mm = (Number(a)*10000 + Number (b)*10000 + Number(c)*10000)/10000;
+            var n = (Number(a)*10000 + Number (b)*10000 + Number(c)*10000 + Number(d)*10000)/10000;
+            $(m).find('.privateSum').find(inputClass).val(l);
+            $(m).find('.projectSum').find(inputClass).val(mm);
+            $(m).find('.cashTotalSum').find(inputClass).val(n);
+        }
+        /*项目合计*/
+        function projectSum(m,inputClass){
+            var m = m;
+            var inputClass = inputClass;
+            var a = $(m).find('tr[data="1"]').find(inputClass).val();
+            var b = $(m).find('tr[data="3"]').find(inputClass).val();
+            var c = $(m).find('tr[data="4"]').find(inputClass).val();
+            var d = $(m).find('tr[data="6"]').find(inputClass).val();
+            var mm = (Number(a)*10000 + Number (b)*10000 + Number(c)*10000)/10000;
+            var n = (Number(a)*10000 + Number (b)*10000 + Number(c)*10000 + Number(d)*10000)/10000;
+            $(m).find('.projectSum').find(inputClass).val(mm);
+            $(m).find('.cashTotalSum').find(inputClass).val(n);
+        }
+        /*现金合计*/
+        function cashTotalSum(m,inputClass){
+            var m = m;
+            var inputClass = inputClass;
+            var a = $(m).find('tr[data="1"]').find(inputClass).val();
+            var b = $(m).find('tr[data="3"]').find(inputClass).val();
+            var c = $(m).find('tr[data="4"]').find(inputClass).val();
+            var d = $(m).find('tr[data="6"]').find(inputClass).val();
+            var n = (Number(a)*10000 + Number (b)*10000 + Number(c)*10000 + Number(d)*10000)/10000;
+            $(m).find('.cashTotalSum').find(inputClass).val(n);
+        }
+        /*净投放-本期*/
+        function finalAmount(inputClass){
+            var inputClass = inputClass;
+            var finalClass = inputClass + 'All';
+            var a = $('.report1').find('tr[data="7"]').find(inputClass).val()*10000;
+            var b = $('.report2').find('tr[data="7"]').find(inputClass).val()*10000;
+            var c = Number(b-a)/10000;
+            $(finalClass).html(c)
+        }
+        /*横向变化*/
+        function broadWise(m,inputClass){
+            var m = m;
+            var inputClass = inputClass;
+            var pre = '';
+            if (inputClass == '.amount') {
+                pre = 'cur'
+            } else if (inputClass == '.totalAmount') {
+                pre = 'total'
+            } else {
+                return false;
+            }
+            var class1 = '.' + pre + 'AddSub',
+                class2 = '.' + pre + 'Rise',
+                class3 = '.' + pre + 'Ratio';
+            for(var eq = 2; eq < 9; eq++){
+                var a = $(m).find('tr').eq(eq).find(inputClass).val()*10000;
+                var b = $(m).find('tr').eq(eq).find(inputClass).attr('data-before')*10000;
+                var c = (a-b)/10000;
+                var d = Number((Number(c)*10000/Number(b)*100).toFixed(2));
+                if (!d || d == Infinity) {
+                    d = '--';
+                }
+                var e = $(m).find('tr[data="5"]').find(inputClass).val()*10000;
+                var e2 = $(m).find('tr[data="2"]').find(inputClass).val()*10000;
+                var f = Number((Number(a)/Number(e)*100).toFixed(2));
+                if (!f || f == Infinity) {
+                    f = '--';
+                }
+                var f2 = Number((Number(a)/Number(e2)*100).toFixed(2));
+                if (!f2 || f2 == Infinity) {
+                    f2 = '--';
+                }
+
+                $(m).find('tr').eq(eq).find(class1).val(c);
+                $(m).find('tr').eq(eq).find(class2).val(d);
+                if(eq < 7){
+                    if(eq==4 || eq==5){
+                        $(m).find('tr').eq(eq).find(class3).val(f2);
+                    }else{
+                        $(m).find('tr').eq(eq).find(class3).val(f);
+                    }
+
+                }
+
+            }
+
+        }
+        /*自动计算金额*/
+        function setNum(m,t,c){
+            var className = '.report'+m;
+            var inputClass = '.'+c;
+
+            var value = $(className).find('tr[data='+t+']').find(inputClass).val();
+            //console.log(value);
+            if(value>99999999){
+                layer.msg('输入的金额过大！');
+                $(className).find('tr[data='+t+']').find(inputClass).val('');
+                return false;
+            }
+            if(value<0){
+                layer.msg('输入的金额不能小于0！');
+                $(className).find('tr[data='+t+']').find(inputClass).val('');
+                return false;
+            }
+            var length = value.length;
+            var first = value.indexOf(".");
+            if( first>0 && length - first >5 ){
+                layer.msg('输入的金额过小！');
+                $(className).find('tr[data='+t+']').find(inputClass).val('');
+                return false;
+            }
+
+            if(t==1){
+                projectSum(className,inputClass);
+                finalAmount(inputClass);
+            }else if(t==3 || t==4){
+                privateSum(className,inputClass);
+                finalAmount(inputClass);
+            }else if(t==6){
+                cashTotalSum(className,inputClass);
+                finalAmount(inputClass);
+            }
+            broadWise(className,inputClass);
+        }
+        $('tbody tr td input').each(function(){
+            var m = $(this).attr('data-list');
+            var t = $(this).attr('data-type');
+            var c = $(this).attr('class');
+            $(this).bind('input propertychange', function() { setNum(m,t,c); });
+            $(this).blur(function(){ setNum(m,t,c); });
+            $(this).on('keypress',function(){ setNum(m,t,c); });
+        });
+
+
+
+        /*计算百分比*/
+        function ratio(){
+            var outlets = $('.outlets').val();
+            var sampleOutlets = $('.sampleOutlets').val();
+            var ratio = Number((Number(sampleOutlets)/Number(outlets)*100).toFixed(2));
+            if (!ratio || ratio == Infinity) {
+                ratio = '--';
+            }
+            $('.ratio').html(ratio+'%');
+        }
+        ratio();
+        $('.ratioInput').bind('input propertychange', function() { ratio(); });
+        $('.ratioInput').blur(function(){ ratio(); });
+        $('.ratioInput').on('keypress',function(){ ratio(); });
+
+        function ratio2(){
+            var selfHelp = $('.selfHelp').val();
+            var sampleSelfHelp = $('.sampleSelfHelp').val();
+            var ratio = Number((Number(sampleSelfHelp)/Number(selfHelp)*100).toFixed(2));
+            if (!ratio || ratio == Infinity) {
+                ratio = '--';
+            }
+            $('.ratio2').html(ratio+'%');
+        }
+        ratio2();
+        $('.ratioInput2').bind('input propertychange', function() { ratio2(); });
+        $('.ratioInput2').blur(function(){ ratio2(); });
+        $('.ratioInput2').on('keypress',function(){ ratio2(); });
+
+
+
+
+        $('tbody tr td input').each(function(){
+            var a = $(this).attr('class');
+            var t = $(this).attr('data-type');
+            $(this).bind('input propertychange', function() { setNum(a,t); });
+            $(this).blur(function(){ setNum(a,t); });
+            $(this).on('keypress',function(){ setNum(a,t); });
+        });
+
+        /*新增-提交*/
+        $("#submit").click(function(){
+            var bankCode = "{$bank_code}";
+            var year = {$year};
+            var quarter = {$quarter};
+            var outlets = $('.outlets').val();
+            var sampleOutlets = $('.sampleOutlets').val();
+            if( outlets < sampleOutlets ){
+                layer.msg('抽样网点不能多于总网点！');
+                return false;
+            }
+
+            var selfHelp = $('.selfHelp').val();
+            var sampleSelfHelp = $('.sampleSelfHelp').val();
+            if( Number(selfHelp) < Number(sampleSelfHelp) ){
+                console.log(selfHelp);
+                console.log(sampleSelfHelp);
+                layer.msg('抽样机具不能多于总机具！');
+                return false;
+            }
+
+            var tableData = '';
+            $('.data_row').each(function(){
+                var rowCode = $(this).find('td .rowCode').val();
+                var amount = $(this).find('td .amount').val()*10000;
+                var totalAmount = $(this).find('td .totalAmount').val()*10000;
+                if (rowCode == '') { rowCode = 0; }
+                if (amount == '') { amount = 0; }
+                if (totalAmount == '') { totalAmount = 0; }
+                tableData += '{rowCode:"'+rowCode+'",amount:'+amount+',totalAmount:'+totalAmount+'},'
+            });
+            tableData = '[' + tableData + ']';
+            tableData = tableData.replace(",]","]");
+            $.ajax({
+                url: '__ROOT__/api/report/cash_collect_add',
+                data:{
+                    bankCode: bankCode,
+                    year: year,
+                    quarter: quarter,
+                    outlets: outlets,
+                    sampleOutlets: sampleOutlets,
+                    selfHelp: selfHelp,
+                    sampleSelfHelp: sampleSelfHelp,
+                    tableData: tableData
+                },
+                type: "post",
+                data_type:'json',
+                success: function (info) {
+                    if (info.err_code == 0) {
+                        setTimeout(function () {
+                            var url = "__ROOT__/iframe/report/{:set_report_file($reportNum)}_detail/bankCode/{$bank_code}/bank_code/{$bank_key}/year/{$year}/quarter/{$quarter}/reportNum/{$reportNum}.html";
+                            window.location.href = url;
+                        }, 1000);
+                        layer.msg('填报成功');
+                    }else {
+                        layer.msg(info.err_msg);
+                    }
+                }
+            });
+        });
+    })
+</script>
+{/block}

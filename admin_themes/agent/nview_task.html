@@ -1,0 +1,401 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+        <span class="layui-breadcrumb">
+            <a href="{:url('admin/agent/index')}">代理任务概览</a>
+            <a><cite>任务详情</cite></a>
+        </span>
+            {if $data}
+        <div class="info-item" style="margin-top: 20px;">
+            <div class="info-inline" style="font-size:16px;font-weight:bold;">
+                <label class="info-label" style="font-size:16px;font-weight:bold;">任务单号</label>
+                <div class="info-text">
+                    {$data['taskCode']}
+                    <div class="mini-qr">
+                        <div id="qr_task" style=""></div>
+                        <img src="__IMG__/mini_qr.png" style="">
+                    </div>
+                </div>
+            </div>
+            <div class="layui-inline" style="height: 32px;margin-bottom: 27px">
+                <label class="layui-form-label" style="text-align:left;margin-right: -58px;">单位：</label>
+                <div class="layui-input-inline">
+                    <select class="layui-input" style="cursor: pointer;width: 68px;" id="doConversion">
+                        <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元</option>
+                        <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-inline">
+                <label class="info-label">任务类型</label>
+                <div class="info-text">
+                    代理行调款
+                </div>
+            </div>
+            <div class="info-inline">
+                <label class="info-label">调出银行</label>
+                <div class="info-text">
+                    {:get_bank_branch($data['outBankOrg'])}
+                </div>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-inline">
+                <label class="info-label">任务状态</label>
+                <div class="info-text {if $data['taskStatus'] == 3}green{else}red{/if}">
+                    {:get_task_status($data['taskStatus'])}
+                </div>
+            </div>
+            <div class="info-inline">
+                <label class="info-label">出库时间</label>
+                <div class="info-text">
+                    {$data['outTime']|default="--"}
+                </div>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-inline">
+                <label class="info-label">创建日期</label>
+                <div class="info-text">
+                    {$data['opTime']}
+                </div>
+            </div>
+            <div class="info-inline">
+                <label class="info-label">出库操作人</label>
+                <div class="info-text">
+                    {$data['outName']|default="--"}
+                </div>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-inline">
+                <label class="info-label">任务日期</label>
+                <div class="info-text">
+                    {$data['taskTime']}
+                </div>
+            </div>
+            <div class="info-inline">
+                <label class="info-label">调入银行</label>
+                <div class="info-text">
+                    {:get_bank_branch($data['inBankOrg'])}
+                </div>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-inline">
+                <label class="info-label">金额</label>
+                <div class="info-text red doVersionOne">
+                    {:number_format($data['taskAmount'],2,'.',',')}
+                </div>
+            </div>
+            <div class="info-inline">
+                <label class="info-label">入库时间</label>
+                <div class="info-text">
+                    {$data['inTime']|default="--"}
+                </div>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-inline">
+                <label class="info-label">创建人</label>
+                <div class="info-text">
+                    {$data['opName']}
+                </div>
+            </div>
+            <div class="info-inline">
+                <label class="info-label">入库操作人</label>
+                <div class="info-text">
+                    {$data['inName']|default="--"}
+                </div>
+            </div>
+        </div>
+            
+
+            <table class="layui-table in-scan">
+                <thead>
+                <tr>
+                    <td width="25%">版别</td>
+                    <td width="25%">任务金额</td>
+                    <td width="25%">双流同步</td>
+                    <td width="25%">未双流同步</td>
+                </tr>
+                </thead>
+                <tbody>
+                {volist name="$data['valutaAmounts']" id="vo"}
+                    {if ($vo['valutaAmount']-$vo['freeAmount']+$vo['valutaAmount']+$vo['freeAmount']) > 0}
+                    <tr class="valuta-tr" data="{$vo['valutaCode']}">
+                        <td>{:get_valuta($vo['valutaCode'],'valuta_name')}</td>
+                        <td class="doVersionOne">{:number_format($vo['valutaAmount'],2,'.',',')}</td>
+                        <td class="sync-num doVersionOne" data="{$vo['valutaFlag'] == 1 ? $vo['valutaAmount']:0}">{:number_format($vo['valutaFlag'] == 1 ? $vo['valutaAmount']:0,2,'.',',')}</td>
+                        <td class="unsync-num doVersionOne {if $vo['freeAmount'] != 0 && get_valuta($vo['valutaCode'],'valuta_flag') != 0} red{/if}" data="{$vo['valutaFlag'] == 0 ? $vo['valutaAmount'] : 0}">{:number_format($vo['valutaFlag'] == 0 ? $vo['valutaAmount']:0,2,'.',',')}</td>
+                    </tr>
+                    {/if}
+                {/volist}
+                </tbody>
+                <tfoot>
+                <tr>
+                    <td>合计</td>
+                    <td class="amount-sum doVersionOne" data="{$data['taskAmount']}">{:number_format($data['taskAmount'],2,'.',',')}</td>
+                    <td class="scan-sum doVersionOne">0</td>
+                    <td class="noscan-sum doVersionOne">0</td>
+                </tr>
+                </tfoot>
+            </table>
+            <br>
+            {if isset($data['taskChange']) || $data['taskChange'] && $data['changeFlag'] == 1}
+                <table class="layui-table" lay-skin="row">
+                    <thead>
+                    <tr>
+                        <td colspan="4">变更详情</td>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td width="25%" class="">原任务金额:<span class="doVersionOne">{$data['taskChange']['taskAmount']}</span></td>
+                        <td width="25%" class="">变更后任务金额:<span class="doVersionOne">{$data['taskChange']['taskAmount2']}</span></td>
+                        <td width="25%" class="">变更类型:<span class=""><?php echo $data['changeFlag'] > 0 ? $data['changeFlag'] > 1 ? '回退' : '变更' : '初始' ;?></span></td>
+                        <td width="25%" class="">变更操作人:<span class="">{$data['taskChange']['opName']}</span></td>
+                    </tr>
+                    <tr>
+                        <td width="25%" class="">原双流金额:<span class="doVersionOne">{$data['taskChange']['taskDoubleAmount']}</span></td>
+                        <td width="25%" class="">变更后双流金额:<span class="doVersionOne">{$data['taskChange']['taskDoubleAmount2']}</span></td>
+                        <td width="25%" class="">备注:<span class="">{$data['taskChange']['changeReason']}</span></td>
+                        <td width="25%" class="">变更时间:<span class=""><?php echo date('Y-m-d H:i:s',$data['taskChange']['opTime']/1000);?></span></td>
+                    </tr>
+                    <tr>
+                        <td width="25%" class="">原非双流金额:<span class="doVersionOne">{$data['taskChange']['taskFreeAmount']}</span></td>
+                        <td width="25%" class="">变更后非双流金额:<span class="doVersionOne">{$data['taskChange']['taskFreeAmount2']}</span></td>
+                        <td width="25%" class="">退回金额:<span class="doVersionOne">{$data['backAmount']}</span></td>
+                        <td width="25%" class=""></td>
+                    </tr>
+                    </tbody>
+                </table>
+            {/if}
+            <div>双流同步包号：</div>
+            <table class="new-table" id="data_table">
+                <thead>
+                <tr>
+                    <th width="20%">序号</th>
+                    <th width="60%">包号</th>
+                    <th width="20%">金额</th>
+                </tr>
+                </thead>
+                <tbody>
+                {if $data['packs']}
+                {volist name="$data['packs']" id="vo"}
+                <tr class="low">
+                    <td>{$i}</td>
+                    <td>{$vo['packCode']}</td>
+                    <td class="doVersionOne">{:number_format($vo['packAmount'],2,'.',',')}</td>
+                </tr>
+                {/volist}
+                {else}
+                <tr class="low"><td colspan="3" class="text-center">暂无数据</td></tr>
+                {/if}
+                </tbody>
+            </table>
+            <div>双流同步捆号：</div>
+            <table class="new-table" id="data_table">
+                <thead>
+                <tr>
+                    <th width="20%">序号</th>
+                    <th width="60%">捆号</th>
+                    <th width="20%">金额</th>
+                </tr>
+                </thead>
+                <tbody>
+                {if $data['bundles']}
+                {volist name="$data['bundles']" id="vo"}
+                <tr class="low">
+                    <td>{$i}</td>
+                    <td>{$vo['bundleCode']}</td>
+                    <td class="doVersionOne">{:number_format($vo['bundleAmount'],2,'.',',')}</td>
+                </tr>
+                {/volist}
+                {else}
+                <tr class="low"><td colspan="3" class="text-center">暂无数据</td></tr>
+                {/if}
+                </tbody>
+            </table>
+            <?php if(isset($data['unPacks']) && $data['unPacks']) { ?>
+            <div>未扫描包号：</div>
+            <table class="new-table">
+                <thead>
+                    <tr>
+                        <th width="20%">序号</th>
+                        <th width="20%">包号</th>
+                        <th width="20%">金额</th>
+                        <th width="20%">是否双流</th>
+                        <th width="20%">状态</th>
+                    </tr>                
+                </thead>
+                <tbody>
+                <?php foreach ($data['unPacks'] as $k=>$vo ){ ?>
+                <tr class='low'>
+                    <td><?php echo $k+1;?></td>
+                    <td><?php echo $vo['packCode'];?></td>
+                    <td class="doVersionOne"><?php echo number_format($vo['packAmount']);?></td>
+                    <td>否</td>
+                    <td>{$vo['backType'] == 1 ? '回退':'作废'}</td>
+                    <!-- <td><a href="{:url('/admin/bundle/index',['bundle_code'=>$vo['packCode']])}" >查看</a></td> -->
+                </tr>
+                <?php } ?>
+                </tbody>
+            </table>
+            <?php } ?>
+            <?php if(isset($data['unBundles']) && $data['unBundles']) { ?>
+            <div>未扫描捆号：</div>
+            <table class="new-table">
+                <thead>
+                    <tr>
+                        <th width="20%">序号</th>
+                        <th width="20%">捆号</th>
+                        <th width="20%">金额</th>
+                        <th width="20%">是否双流</th>
+                        <th width="20%">状态</th>
+                    </tr>                
+                </thead>
+                <tbody>
+                <?php foreach ($data['unBundles'] as $k=>$vo ){ ?>
+                <tr class='low'>
+                    <td><?php echo $k+1;?></td>
+                    <td><?php echo $vo['bundleCode'];?></td>
+                    <td class="doVersionOne"><?php echo number_format($vo['bundleAmount']);?></td>
+                    <!-- <td><a href="{:url('/admin/bundle/index',['bundle_code'=>$vo['bundleCode']])}" >查看</a></td> -->
+                    <td>否</td>
+                    <td>{$vo['backType'] == 1 ? '回退':'作废'}</td>
+                </tr>
+                <?php } ?>
+                </tbody>
+            </table>
+            <?php } ?>
+            <div id="page_box"></div>
+            <input type="hidden" id="taskCode" value="{$data['taskCode']}">
+            <input type="hidden" id='taskUnExistent' value="0">
+            {else}
+            <input type="hidden" id='taskUnExistent' value="1">
+            {/if}
+        </div>
+    </div>
+</div>
+{/block}
+{block name="js"}
+<script src="__JS__/jquery.qrcode.js"></script>
+{/block}
+{block name="script"}
+<script>
+    var taskUnExistent = $('#taskUnExistent').val();
+    if (taskUnExistent == 1) {
+        layer.msg('该任务号不存在');
+        setTimeout(function(){
+          window.location.href = '/admin/agent/index.html'
+        }, 2000);
+    }
+    var task_code = $('#taskCode').val();
+    $('#qr_task').qrcode({width:200,height:200,correctLevel:0,text:task_code});
+    function search(curr){
+        layer.load(2);
+        var url = "__ROOT__/api/bank/query_bundle_detail";
+        var op = {
+            cur_page: curr || 1,
+            task_code:task_code
+        };
+
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            alert('运行了')
+            console.log(data);
+            //var bundles = data.bundles;
+            var bundles = data.bundles;
+            var html_str = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < bundles.length; i++){
+                    html_str = html_str + "<tr>";
+                    html_str = html_str + "<td>"+(i+1)+"</td>";
+                    html_str = html_str + "<td>"+bundles[i].bundle_code+"</td>";
+                    html_str = html_str + "<td>"+bundles[i].pack_amount_str+"</td>";
+                    html_str = html_str + '<td><a href="__ROOT__/admin/task/pack/task_code/'+task_code+'/bundle_code/'+bundles[i].bundle_code+'.html" >查看</a></td>';
+                    html_str = html_str + '<tr>';
+                }
+                if(html_str == ''){
+                    html_str = '<tr><td colspan="7" class="text-center">暂无数据</td></tr>';
+                    $('.downloadbtn').hide();
+                }
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = '<tr><td colspan="7" class="text-center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="window.reload();">刷新</a></td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+        });
+    };
+    //运行
+    // search();
+
+    //元万元亿切换
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+
+        $('.doVersionOne').each(function(i,e){
+            if (!$(this).attr('number')) {
+                $(this).attr('number',$(this).text());
+            }
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+            
+            $(this).text(numberNew);                
+        });
+    });
+    function sync(){
+        var total = $('.amount-sum').attr('data');
+        var sync = 0;
+        $('.in-scan tbody tr').each(function(){
+            sync += Number($(this).find('td').eq(2).attr('data'))
+        })
+
+        var unsync = Number(total) - Number(sync)
+        console.log(sync)
+        console.log(unsync)
+
+        $('.sync').text(number_format(sync,2,'.',','));
+        $('.unsync').text(number_format(unsync,2,'.',','));
+
+        $('.scan-sum').text(number_format(sync,2,'.',','));
+        $('.noscan-sum').text(number_format(unsync,2,'.',','));
+    }
+    sync();
+    $("#doConversion").trigger("change");
+</script>
+{/block}

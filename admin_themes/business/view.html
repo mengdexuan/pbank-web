@@ -1,0 +1,146 @@
+{extend name="base" /}
+{block name="body"}
+<style>
+    .gzh-pic {
+        width: 145px;
+        height: 33px;
+    }
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">业务编号：</label>
+                    <div class="info-text" id="bisNo">{$bisNo}</div>
+                </div>
+                <div class="info-inline">
+                    <label class="info-label">交易时间：</label>
+                    <div class="info-text" id="bisDateTime">{$bisDateTime}</div>
+                </div>
+                <div class="info-inline">
+                    <label class="info-label">交易类型：</label>
+                    <div class="info-text" id="businessType" data="{$businessType}">{$businessTypeStr}</div>
+                </div>
+                <div class="info-inline">
+                    <label class="info-label">交易金额：</label>
+                    <div class="info-text" id="bisMoneyTotal"></div>
+                </div>
+                <div class="info-inline">
+                    <label class="info-label">机构编号：</label>
+                    <div class="info-text" id="netBankCode">{$netBankCode}</div>
+                </div>
+                <div class="info-inline">
+                    <label class="info-label">机构名称：</label>
+                    <div class="info-text" id="bankName">{:get_bank_branch($netBankCode)}</div>
+                </div>
+                <!--<div class="info-inline">
+                    <label class="info-label">柜面号：</label>
+                    <div class="info-text"></div>
+                </div>-->
+            </div>
+            <div class="m-10-0">
+                <input type="checkbox" name="businessType" value="0" checked>
+                全部
+                <input type="checkbox" name="businessType" value="1">
+                正常
+                <input type="checkbox" name="businessType" value="2">
+                坐支
+            </div>
+            <table class="new-table" id="data_table">
+                <thead>
+                <tr>
+                    <th>冠字号码</th>
+                    <th>冠字号图片</th>
+                    <th>币值</th>
+                    <th>版别</th>
+                    <th>状态</th>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+            <div id="page_box"></div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+
+
+    function search(curr){
+        var netBankCode = $('#netBankCode').html();
+        var businessType = $('#businessType').attr('data');
+        /*var businessType = $('input[name="businessType"]').val();*/
+        var bisNo = $('#bisNo').html();
+        var bisDateTime = $('#bisDateTime').html();
+        var status = $('input[name="businessType"]:checked').val();
+        layer.load(2);
+        var url = "__ROOT__/api/inout/bis_detail";
+        var op = {
+            netBankCode : netBankCode,
+            businessType : businessType,
+            bisNo : bisNo,
+            bisDateTime : bisDateTime,
+            status: status,
+            pageSize: 20,
+            page: curr || 1
+        };
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            console.log(result);
+            var data = result.data;
+            var html_str = '';
+            $('#page_box').html('');
+            if(result.errorCode == 0  && data.list != null){
+                $('#bankName').html(data.bankName);
+                $('#bisMoneyTotal').html(data.bisMoneyTotal);
+                var list = data.list;
+                for(var i = 0; i < list.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td>"+list[i].fullGzh+"</td>";
+                    html_str = html_str + "<td><img class='gzh-pic' src='"+list[i].gzhImagePath+"'></td>";
+                    html_str = html_str + "<td>"+list[i].currency+"</td>";
+                    html_str = html_str + "<td>"+list[i].version+"</td>";
+                    html_str = html_str + "<td>"+list[i].status_str+"</td>";
+                    html_str = html_str + '</tr>';
+                }
+                if(html_str == ''){
+                    html_str = '<tr class="low"><td colspan="5" class="text-center">暂无数据</td></tr>';
+                }
+                laypage({
+                    cont: 'page_box',
+                    pages: Math.ceil(data.count/20),
+                    curr: curr || 1,
+                    jump: function(obj, first){
+                        if(!first){
+                            //console.log(curr);
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else if(result.errorCode == 0  && data.list == null){
+                html_str = '<tr class="low"><td colspan="9" class="text-center">暂无数据</td></tr>';
+            }else{
+                html_str = '<tr class="low"><td colspan="9" class="text-center">数据错误：'+result.err_msg+'</td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+        });
+    };
+    //运行
+    search();
+    $('input[name="businessType"]').each(function(){
+        $(this).click(function(){
+            $('input[name="businessType"]').prop('checked',false);
+            $(this).prop('checked',true);
+            var status = $(this).val();
+            console.log(status);
+            search();
+        })
+    })
+</script>
+{/block}

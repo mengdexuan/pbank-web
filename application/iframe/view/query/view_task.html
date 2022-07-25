@@ -1,0 +1,317 @@
+{extend name="base" /}
+{block name="body"}
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+        <span class="layui-breadcrumb">
+            <a href="{:url('admin/task/'.$version.'index')}">调拨任务概览</a>
+            <a><cite>任务详情</cite></a>
+        </span>
+            {if $data}
+            <div class="info-item" style="margin-top: 20px;">
+                <div class="info-inline" style="font-size:16px;font-weight:bold;">
+                    <label class="info-label" style="font-size:16px;font-weight:bold;">任务单号</label>
+                    <div class="info-text">
+                        {$data['task_code']}
+                        <div class="mini-qr">
+                            <div id="qr_task" style=""></div>
+                            <img src="__IMG__/mini_qr.png" style="">
+                        </div>
+                    </div>
+                </div>
+                <div class="info-inline">
+                    {if $data['task_status'] == 1 && $data['out_bank'] == get_cur_bank()}
+                        <a href="{:url('/admin/task/'.$version.'out_room',['task_code'=>$data['task_code']])}" class="layui-btn layui-btn-small" style="float:left;">出库</a>
+                    {/if}
+                    {if $data['task_status'] == 2 && $data['in_bank'] == get_cur_bank()}
+                        <a href="{:url('/admin/task/'.$version.'in_room',['task_code'=>$data['task_code']])}" class="layui-btn layui-btn-small" style="float:left;">入库</a>
+                    {/if}
+                    {if $data['task_status'] == 3}
+                        <div class="donwonload"  style="float:left;">
+                            <a class="layui-btn layui-btn-normal layui-btn-small" href="{:url('admin/task/download_task_file',['task_code'=>$data['task_code']])}">下载对应的GZH文件</a>
+                        </div>
+                    {/if}
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">任务类型</label>
+                    <div class="info-text">
+                        <!--{$data['task_type']}-->
+                        {if condition="$data.task_type eq '1'"}
+                        残损券
+                        {else /}
+                        交取款
+                        {/if}
+                    </div>
+                </div>
+                <div class="info-inline">
+                    <label class="info-label">调出银行</label>
+                    <div class="info-text">
+                        {if $data['out_bank'] == get_cur_bank()}
+                        本行
+                        {else}
+                        {:get_bank($data['out_bank'])}
+                        {/if}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">任务状态</label>
+                    <div class="info-text {if $data['task_status'] == 3}green{else}red{/if}">
+                        {:get_task_status($data['task_status'])}
+                    </div>
+                </div>
+                <div class="info-inline">
+                    <label class="info-label">出库时间</label>
+                    <div class="info-text">
+                        {$data['out_time']|default="--"}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">创建日期</label>
+                    <div class="info-text">
+                        {$data['op_time']}
+                    </div>
+                </div>
+                <div class="info-inline">
+                    <label class="info-label">出库操作人</label>
+                    <div class="info-text">
+                        {$data['out_name']|default="--"}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">执行日期</label>
+                    <div class="info-text">
+                        {$data['task_time']}
+                    </div>
+                </div>
+                <div class="info-inline">
+                    <label class="info-label">调入银行</label>
+                    <div class="info-text">
+                        {if $data['in_bank'] == get_cur_bank()}
+                        本行
+                        {else}
+                        {:get_bank($data['in_bank'])}
+                        {/if}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">金额</label>
+                    <div class="info-text red">
+                        {:number_format($data['task_amount'],2,'.',',')}
+                    </div>
+                </div>
+                <div class="info-inline">
+                    <label class="info-label">入库时间</label>
+                    <div class="info-text">
+                        {$data['in_time']|default="--"}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline">
+                    <label class="info-label">创建人</label>
+                    <div class="info-text">
+                        {$data['op_name']}
+                    </div>
+                </div>
+                <div class="info-inline">
+                    <label class="info-label">入库操作人</label>
+                    <div class="info-text">
+                        {$data['in_name']|default="--"}
+                    </div>
+                </div>
+            </div>
+            {/if}
+            <table class="layui-table in-scan">
+                <thead>
+                <tr>
+                    <td>版别</td>
+                    <td>任务金额</td>
+                    <td>双流同步</td>
+                    <td>未双流同步</td>
+                </tr>
+                </thead>
+                <tbody>
+                {volist name="$data['valuta_amounts']" id="vo"}
+                {if ($vo['valuta_amount'] + $vo['valuta_amount'] - $vo['free_amount'] + $vo['free_amount']) > 0}
+                <tr class="valuta-tr" data="{$vo['valuta_code']}">
+                    <td>{:get_valuta($vo['valuta_code'],'valuta_name')}</td>
+                    <td>{:number_format($vo['valuta_amount'],2,'.',',')}</td>
+                    <td class="sync-num" data="{$vo['valuta_amount']-$vo['free_amount']}">{:number_format($vo['valuta_amount']-$vo['free_amount'],2,'.',',')}</td>
+                    <td class="unsync-num {if $vo['free_amount'] != 0 && get_valuta($vo['valuta_code'],'valuta_flag') == 1} red{/if}" data="{$vo['free_amount']}">{:number_format($vo['free_amount'],2,'.',',')}</td>
+                </tr>
+                {/if}
+                {/volist}
+                </tbody>
+                <tfoot>
+                <tr>
+                    <td>合计</td>
+                    <td class="amount-sum" data="{$data['task_amount']}">{:number_format($data['task_amount'],2,'.',',')}</td>
+                    <td class="scan-sum">0</td>
+                    <td class="noscan-sum">0</td>
+                </tr>
+                </tfoot>
+            </table>
+            <br>
+            <div>双流同步包号：</div>
+            <table class="new-table" id="data_table">
+                <thead>
+                <tr>
+                    <th width="10%">序号</th>
+                    <th width="40%">包号</th>
+                    <th width="40%">金额</th>
+                    <th width="10%">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr class="low">
+                    <td colspan="4" class="text-center">查询中</td>
+                </tr>
+                </tbody>
+            </table>
+            <div>双流同步捆号：</div>
+            <table class="new-table">
+                <thead>
+                <tr>
+                    <th width="10%">序号</th>
+                    <th width="40%">捆号</th>
+                    <th width="40%">金额</th>
+                    <th width="10%">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php if(isset($data['bundles']) && $data['bundles']) { ?>
+                <?php foreach ($data['bundles'] as $k=>$vo ){ ?>
+                <tr class='low'>
+                    <td><?php echo $k+1;?></td>
+                    <td><?php echo $vo['bundle_code'];?></td>
+                    <td><?php echo number_format($vo['bundle_amount']);?></td>
+                    <td><a href="{:url('/iframe/bundle/index',['bundle_code'=>$vo['bundle_code']])}" >查看</a></td>
+                </tr>
+                <?php } ?>
+                <?php } else { ?>
+                    <tr class="low">
+                        <td colspan="4" class="text-center">暂无数据</td>
+                    </tr>
+                <?php } ?>
+                </tbody>
+            </table>
+            <div>双流同步把号：</div>
+            <table class="new-table">
+                <thead>
+                <tr>
+                    <th width="10%">序号</th>
+                    <th width="40%">把号</th>
+                    <th width="40%">金额</th>
+                    <th width="10%">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php if(isset($data['handles']) && $data['handles']) { ?>
+                <?php foreach ($data['handles'] as $k=>$vo ){ ?>
+                <tr class='low'>
+                    <td><?php echo $k+1;?></td>
+                    <td><?php echo $vo['handle_code'];?></td>
+                    <td><?php echo number_format($vo['handle_amount']);?></td>
+                    <td><a href="{:url('/iframe/holds/page',['bundle_code'=>$vo['handle_code']])}" >查看</a></td>
+                </tr>
+                <?php } ?>
+                <?php } else { ?>
+                    <tr class="low">
+                        <td colspan="4" class="text-center">暂无数据</td>
+                    </tr>
+                <?php } ?>
+                </tbody>
+            </table>
+
+            <div id="page_box"></div>
+        </div>
+    </div>
+{/block}
+{block name="js"}
+<script src="__JS__/jquery.qrcode.js"></script>
+{/block}
+{block name="script"}
+<script>
+    var task_code = "{$data['task_code']}";
+    $('#qr_task').qrcode({width:200,height:200,correctLevel:0,text:task_code});
+    function search(curr){
+        layer.load(2);
+        var task_code = "{$data['task_code']}";
+        var url = "__ROOT__/api/bank/query_task_detail";
+        var op = {
+            cur_page: curr || 1,
+            task_code:task_code
+        };
+
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var packs = data.packs;
+            var html_str = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < packs.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td>"+(i+1)+"</td>";
+                    html_str = html_str + "<td>"+packs[i].pack_code+"</td>";
+                    html_str = html_str + "<td>"+packs[i].pack_amount_str+"</td>";
+                    html_str = html_str + '<td><a href="__ROOT__/iframe/task/pack/task_code/'+task_code+'/pack_code/'+packs[i].pack_code+'.html" >查看</a></td>';
+                    html_str = html_str + '</tr>';
+                }
+                if(html_str == ''){
+                    html_str = '<tr class="low"><td colspan="4" class="text-center">暂无数据</td></tr>';
+                    $('.donwonload').hide();
+                }
+                //去掉分页10-27
+                // laypage({
+                //     cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                //     pages: data.total_page, //通过后台拿到的总页数
+                //     curr: curr || 1, //当前页
+                //     jump: function(obj, first){ //触发分页后的回调
+                //         if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                //             search(obj.curr);
+                //         }
+                //     }
+                // });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = '<tr><td colspan="7" class="text-center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="window.reload();">刷新</a></td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+        });
+    };
+    //运行
+    search();
+
+
+    function sync(){
+        var total = $('.amount-sum').attr('data');
+        var sync = 0;
+        $('.in-scan tbody tr').each(function(){
+            sync += Number($(this).find('td').eq(2).attr('data'))
+        })
+
+        var unsync = Number(total) - Number(sync)
+        console.log(sync)
+        console.log(unsync)
+
+        $('.sync').text(number_format(sync,2,'.',','));
+        $('.unsync').text(number_format(unsync,2,'.',','));
+
+        $('.scan-sum').text(number_format(sync,2,'.',','));
+        $('.noscan-sum').text(number_format(unsync,2,'.',','));
+    }
+    sync();
+</script>
+{/block}

@@ -1,0 +1,185 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+
+        <div class="layui-tab-content">
+
+
+
+            <div class="title-box" style="margin: 10px 0;">
+                <div class="title">商行列表</div>
+                <div class="link"><a href="{:url('admin/bank/add')}" class="layui-btn layui-btn-small" style="color: #fff">添加银行</a></div>
+            </div>
+            <div class="layui-tab layui-tab-brief" lay-filter="docDemoTabBrief">
+                <ul class="layui-tab-title">
+                    <li class="layui-this">开户行</li>
+                    <li>非开户行</li>
+                </ul>
+                <div class="layui-tab-content">
+                    <div class="layui-tab-item layui-show">
+                        <table class="new-table" id="data_table">
+                            <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>商行logo</th>
+                                <th>商行编码</th>
+                                <th>商行名称</th>
+                                <th>操作</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <td colspan="5" class="text-center">查询中</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                        <div id="page_box"></div>
+                    </div>
+                    <div class="layui-tab-item">
+                        <table class="new-table" id="data_table2">
+                            <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>商行logo</th>
+                                <th>商行编码</th>
+                                <th>商行名称</th>
+                                <th>操作</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <td colspan="5" class="text-center">查询中</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                        <div id="page_box2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+
+    function search(curr){
+        layer.load(2);
+        var url = "__ROOT__/api/bank/query_bank_key";
+        var op = {
+            cur_page: curr || 1,
+        };
+
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var bank_key = data.bank_key;
+            console.log(bank_key);
+            var html_str = '';
+            var html_str2 = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < bank_key.length; i++){
+                    if( bank_key[i].bank_type == 0 ){
+                        html_str = html_str + "<tr class='low'>";
+                        html_str = html_str + "<td class='eq'>"+(i+1)+"</td>";
+                        html_str = html_str + "<td><img src='"+bank_key[i].bank_logo+"'></td>";
+                        html_str = html_str + "<td>"+bank_key[i].bank_code+"</td>";
+                        html_str = html_str + "<td>"+bank_key[i].bank_name+"</td>";
+                        html_str = html_str + '<td> <a href="__ROOT__/admin/bank/dot/bank_code/'+bank_key[i].bank_code+'.html" class="layui-btn layui-btn-mini">网点列表</a>'+
+                            '<a href="__ROOT__/admin/bank/show/bank_code/'+bank_key[i].bank_code+'.html" class="layui-btn layui-btn-mini">查看详情</a>'+
+                            '<a href="__ROOT__/admin/bank/edit/bank_code/'+bank_key[i].bank_code+'.html" class="layui-btn layui-btn-normal layui-btn-mini">修改</a>'+
+                            '<a href="__ROOT__/api/bank/del_bank_info" data-code="'+bank_key[i].bank_code+'" class="layui-btn layui-btn-danger layui-btn-mini ajax-del">删除</a>'+
+                            '</td>';
+                        html_str = html_str + '<tr>';
+                    } else if( bank_key[i].bank_type == 1 ){
+                        html_str2 = html_str2 + "<tr class='low'>";
+                        html_str2 = html_str2 + "<td class='eq'>"+(i+1)+"</td>";
+                        html_str2 = html_str2 + "<td><img src='"+bank_key[i].bank_logo+"'></td>";
+                        html_str2 = html_str2 + "<td>"+bank_key[i].bank_code+"</td>";
+                        html_str2 = html_str2 + "<td>"+bank_key[i].bank_name+"</td>";
+                        html_str2 = html_str2 + '<td> <a href="__ROOT__/admin/bank/dot/bank_code/'+bank_key[i].bank_code+'.html" class="layui-btn layui-btn-mini">网点列表</a>'+
+                            '<a href="__ROOT__/admin/bank/show/bank_code/'+bank_key[i].bank_code+'.html" class="layui-btn layui-btn-mini">查看详情</a>'+
+                            '<a href="__ROOT__/admin/bank/edit/bank_code/'+bank_key[i].bank_code+'.html" class="layui-btn layui-btn-normal layui-btn-mini">修改</a>'+
+                            '<a href="__ROOT__/api/bank/del_bank_info" data-code="'+bank_key[i].bank_code+'" class="layui-btn layui-btn-danger layui-btn-mini ajax-del">删除</a>'+
+                            '</td>';
+                        html_str2 = html_str2 + '<tr>';
+                    }
+                }
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+                laypage({
+                    cont: 'page_box2', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                html_str = '<tr><td colspan="5" class="text-center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="location=location">刷新</a></td></tr>';
+                html_str2 = '<tr><td colspan="5" class="text-center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="location=location">刷新</a></td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+
+            $('#data_table2').find('tbody').html(html_str2);
+            $('#data_table2').find('tbody').hide();
+            $('#data_table2').find('tbody').fadeIn(500);
+
+            $('#data_table .eq').each(function(){
+                var eq = $('#data_table .eq').index(this);
+                $(this).html(eq+1);
+            })
+            $('#data_table2 .eq').each(function(){
+                var eq2 = $('#data_table2 .eq').index(this);
+                $(this).html(eq2+1);
+            })
+            $('.ajax-del').on('click', function () {
+                var _href = $(this).attr('href');
+                var bank_code = $(this).attr('data-code');
+                layer.open({
+                    shade: false,
+                    content: '确定删除？',
+                    btn: ['确定', '取消'],
+                    yes: function (index) {
+                        $.ajax({
+                            url: _href,
+                            data:{bank_code:bank_code},
+                            type: "post",
+                            success: function (info) {
+                                if (info.err_code === 0) {
+                                    setTimeout(function () {
+                                        location.href = info.url;
+                                    }, 1000);
+                                    info.err_msg = '删除成功';
+                                }
+                                layer.msg(info.err_msg);
+                            }
+                        });
+                        layer.close(index);
+                    }
+                });
+
+                return false;
+            });
+        });
+    };
+    //运行
+    search();
+
+</script>
+{/block}

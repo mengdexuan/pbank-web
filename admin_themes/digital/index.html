@@ -1,0 +1,83 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <div class="title-box" style="margin: 10px 0;">
+                <div class="title">数字货币银行列表</div>
+            </div>
+            <div class="layui-tab-item layui-show">
+                <table class="new-table" id="data_table">
+                    <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>银行名称</th>
+                        <th>当前余额</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+
+                    <tr>
+                        <td colspan="5" class="text-center">查询中</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div id="page_box"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+
+    function search(curr){
+        layer.load(2);
+        var url = "__ROOT__/api/bank/query_account_balance";
+        var op = {
+            cur_page: curr || 1,
+        };
+
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            if(result.err_code == 0){
+                var balance = data.balance;
+                var html_str = '';
+                for(var i = 0; i < balance.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td>"+(i+1)+"</td>";
+                    html_str = html_str + "<td>"+balance[i].bank_str+"</td>";
+                    html_str = html_str + "<td>"+balance[i].balance_str+"</td>";
+                    html_str = html_str + '<td><a href="__ROOT__/admin/digital/digital_info/bank_code/'+balance[i].bank_code+'.html" >查看详情</a></td>';
+                    html_str = html_str + '<tr>';
+                }
+
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = '<tr><td colspan="5" class="text-center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="location=location">刷新</a></td></tr>';
+            }
+
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+
+        });
+    };
+    //运行
+    search();
+
+</script>
+{/block}

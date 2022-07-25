@@ -1,0 +1,173 @@
+{extend name="base" /}
+{block name="css"}
+<style>
+    .layui-input, .layui-textarea{
+        width: 90%;
+    }
+</style>
+{/block}
+{block name="body"}
+<div class="layui-tab layui-tab-brief">
+    <div class="layui-tab-content">
+        <div class="title-box" style="margin: 10px 0;">
+            <div class="title">库存现金余量报表</div>
+            <div class="link"></div>
+        </div>
+
+        {if $is_stock}
+        <div class="layui-form-item green">
+            今天库存上报已审核,审核后无法再次修改，次日可继续提交上报。
+        </div>
+        {else}
+        <div class="layui-form-item">
+            系统自动读取上次填报的数据。（上次填报时间为 {if isset($stock_info['op_time'])}{$stock_info['op_time']}{else}--{/if}）
+        </div>
+        <form class="layui-form form-container" action="{:url('/api/bank/add_buss_stock')}" method="post">
+            <input type="hidden" name="bank_code" value="{$bank_code}">
+            <input type="hidden" name="op_name" id="op_name" value="{$op_name}">
+            <div style="color:red">* 注意：上报库存单位为元。</div>
+        <table class="new-table" style="width: 600px">
+            <thead>
+            <tr>
+                <th>版别</th>
+                <th class="txtR">库存完整券(元)</th>
+                <th class="txtR">库存残损券(元)</th>
+                <th style="width:0;margin: 0;padding: 0"></th>
+            </tr>
+            </thead>
+            <tbody>
+            {volist name="valuta_info" id="vo"}
+                <tr class="low">
+                    <td>
+                        {$vo['valuta_name']}
+                        <input type="hidden" name="valuta_value[{$vo['valuta_code']}]" value="{$vo['valuta_value']}">
+                    </td>
+                    <td class="txtR">
+                        <input name="full_amount[{$vo['valuta_code']}]" value="{if isset($vo['full_amount']) && $vo['full_amount'] != 0}{$vo['full_amount']}{/if}" type="text" class="layui-input full">
+                    </td>
+                    <td class="txtR">
+                        <input name="damaged_amount[{$vo['valuta_code']}]" value="{if isset($vo['damaged_amount']) && $vo['damaged_amount'] != 0}{$vo['damaged_amount']}{/if}" type="text" class="layui-input damaged">
+                    </td>
+                    <td></td>
+                </tr>
+            {/volist}
+            <tr class="low">
+                <td>小计</td>
+                <td class="full_total" {if isset($stock_info['full_amount'])}data="{$stock_info['full_amount']}"{else}data="0"{/if}>
+                    {if isset($stock_info['full_amount'])}{:number_format($stock_info['full_amount'],2,'.',',')}{else}0{/if}
+                </td>
+                <td class="damaged_total" {if isset($stock_info['damaged_amount'])}data="{$stock_info['damaged_amount']}"{else}data="0"{/if}>
+                    {if isset($stock_info['damaged_amount'])}{:number_format($stock_info['damaged_amount'],2,'.',',')}{else}0{/if}
+                </td>
+                <td></td>
+            </tr>
+            <tr class="low">
+                <td>总计</td>
+                <td colspan="2" class="total">
+                    {if isset($stock_info['amount'])}{:number_format($stock_info['amount'],2,'.',',')}{else}0{/if}
+                </td>
+                <td></td>
+            </tr>
+            <tr class="low">
+                <td>备注</td>
+                <td colspan="3">
+                    <textarea name="note" placeholder="请输入内容" class="layui-textarea">{$note}</textarea>
+                </td>
+            </tr>
+            <tr>
+                <td></td>
+                <td colspan="2">
+                    <button class="layui-btn" lay-submit="" lay-filter="*">提交</button>
+                </td>
+                <td></td>
+            </tr>
+            </tbody>
+        </table>
+        </form>
+        {/if}
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    function toThousands(num) {
+        var num = (num || 0).toString(), result = '';
+        var point = num.indexOf('.');
+        var l = num.length;
+        var left = num;
+        var right = '.00';
+        if(point>0){
+            console.log(point);
+            var left = num.substring(0,point);
+            var right = num.substring(point,l);
+            if(right.length == 2){
+                right = right+'0'
+            }
+        }
+        while (left.length > 3) {
+            result = ',' + left.slice(-3) + result;
+            left = left.slice(0, left.length - 3);
+        }
+        if (left) { result = left + result + right; }
+        return result;
+    }
+
+    $('.full').change(function () {
+        input_change('full');
+    });
+    $('.damaged').change(function () {
+        input_change('damaged');
+    });
+    function input_change(_class) {
+        var val = 0;
+        $('.'+_class).each(function () {
+            if($(this).val() != ''){
+                var value = $(this).val();
+                if(value>9999999999999){
+                    layer.msg('输入的金额过大！');
+                    $(this).val('');
+                    return false;
+                }
+                if(value<0){
+                    layer.msg('输入的金额不能小于0！');
+                    $(this).val('');
+                    return false;
+                }
+                var length = $(this).val().length;
+                var first = value.indexOf(".");
+                if( first>0 && length - first >3 ){
+                    layer.msg('输入的金额过小！');
+                    $(this).val('');
+                    return false;
+                }
+
+                val = val + parseFloat($(this).val());
+            }
+        });
+        $('.'+_class+'_total').html(toThousands(val));
+        $('.'+_class+'_total').attr('data',val);
+        $('.total').html(toThousands(parseFloat($('.full_total').attr('data')) + parseFloat($('.damaged_total').attr('data'))))
+    }
+
+    form.on('submit(*)', function(data){
+        $.ajax({
+            url: data.form.action,
+            type: data.form.method,
+            data: $(data.form).serialize(),
+            success: function (info) {
+                if (info.err_code == 0) {
+                    setTimeout(function () {
+                        //window.location.href = '';
+                        history.go(-1);
+                    }, 1000);
+                    info.err_msg = '提交成功'
+                }
+                console.log(info);
+                layer.msg(info.err_msg);
+            }
+        });
+        return false;
+    });
+
+</script>
+{/block}

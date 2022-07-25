@@ -1,0 +1,256 @@
+{extend name="base" /}
+{block name="body"}
+<style>
+    .task_dialog_div {
+        width: 100%;
+        min-height: 36px;
+        margin: 10px 0 0 0;
+        line-height: 36px;
+    }
+    .task_dialog_div:nth-child(1) {
+        margin-top: 20px;
+    }
+    .task_dialog_div label {
+        display: inline-block;
+        width: 110px;
+        height: 36px;
+        padding: 0 10px 0 0;
+        text-align: right;
+    }
+    .task_dialog_div span {
+        display: inline-block;
+        width: auto;
+        height: 36px;
+        line-height: 36px;
+    }
+    .task_dialog_div select {
+        display: inline-block;
+        width: 150px;
+        height: 32px;
+        line-height: 32px;
+        border: 1px solid #ccc;
+    }
+    .del {
+        display: inline-block;
+        color: #EE713B;
+    }
+    .del:hover {
+        color: #EE713B;
+    }
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <span class="layui-breadcrumb">
+                <a href="{:url('admin/report/index')}">报表列表</a>
+                <a><cite>{:show_report_name($reportNum)}</cite></a>
+            </span>
+
+            <div class="title-box">
+                <button class="layui-btn layui-btn-small" id="add_task">添加报表任务</button>
+            </div>
+
+            <div class="layui-tab-item layui-show">
+                <table class="new-table" id="data_table">
+                    <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>项目</th>
+                        <th>填写状态</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td colspan="4" style="text-align: center">暂无数据</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div id="page_box"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--创建报表任务-->
+<div id="task_dialog" style="display: none">
+    <div class="task_dialog_div">
+        <label>报表名称</label>
+        <span id="reportName">{:show_report_name($reportNum)}</span>
+    </div>
+    <div class="task_dialog_div">
+        <label>报告期</label>
+        <select name="year" id="year">
+            <option value="2017">2017</option>
+            <option value="2018">2018</option>
+            <option value="2019">2019</option>
+            <option value="2020">2020</option>
+            <option value="2021">2021</option>
+            <option value="2022">2022</option>
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+        </select>
+        {if $reportNum == "R0003"}
+        {else}
+        <select name="quarter" id="quarter">
+            <option value="1">第一季度</option>
+            <option value="2">第二季度</option>
+            <option value="3">第三季度</option>
+            <option value="4">第四季度</option>
+        </select>
+        {/if}
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+<script>
+    //创建报表任务 strat
+    $('#add_task').click(function () {
+        var task_dom = $('#task_dialog');
+        layer.open({
+            type: 1,
+            area: ['500px', '250px'],
+            title:'添加报表任务',
+            content: task_dom,
+            btn: ['添加', '取消'],
+            yes: function(){
+                add_task();
+            }
+            ,btn2: function(){
+                $('#task_dialog').hide();
+                resetform();
+            }
+            ,cancel: function(){
+                $('#task_dialog').hide();
+                resetform();
+            }
+        });
+    });
+    function add_task(){
+        var reportNum = "{$reportNum}",
+            reportYear = $('#year option:selected').val(),
+            reportTime = $('#quarter option:selected').val();
+        if( "{$reportNum}" == "R0003" ){
+            reportTime = 0;
+        }
+        $.ajax({
+            url: '__ROOT__/api/report/create_task',
+            data:{
+                reportNum : reportNum,
+                reportYear: reportYear,
+                reportTime: reportTime
+            },
+            type: "post",
+            data_type:'json',
+            success: function (info) {
+                if (info.err_code == 0) {
+                    setTimeout(function () {
+                        location.reload();
+                    }, 1000);
+                    layer.msg('创建成功');
+                    resetform()
+                }else {
+                    layer.msg(info.err_msg);
+                }
+            }
+        });
+    }
+    function resetform(){
+        console.log('重置表单');
+    }
+    //创建报表任务 end
+
+    // 获取任务列表 start
+    function search(curr){
+        layer.load(2);
+        var gzh_code = $.trim($('.gzh_code').val());
+        var url = "__ROOT__/api/report/tasks";
+        var op = {
+            reportNum : "{$reportNum}",
+            curPage: curr || 1,
+            curNum : 20
+        };
+        console.log(curr);
+
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var tasks = data.tasks;
+            var html_str = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < tasks.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td>"+(i+1)+"</td>";
+                    if( "{$reportNum}" == "R0003" ){
+                        html_str = html_str + "<td>"+tasks[i].reportYear+"年</td>";
+                    }else{
+                        html_str = html_str + "<td>"+tasks[i].reportYear+'年第'+tasks[i].reportTime+"季度</td>";
+                    }
+                    html_str = html_str + "<td>"+tasks[i].fillInCount+"/"+ tasks[i].bankCount +"</td>";
+                    if (tasks[i].fillInCount == 0 ){
+                        html_str = html_str + '<td><a class="del" data="'+tasks[i].taskCode+'">删除</a></td>';
+                    }else {
+                        html_str = html_str + '<td><a href="__ROOT__/admin/report/{:set_report_file($reportNum)}_detail/year/'+tasks[i].reportYear+'/quarter/'+tasks[i].reportTime+'/reportNum/{$reportNum}.html" >查看</a></td>';
+                    }
+
+                    html_str = html_str + '</tr>';
+                }
+                if(html_str !=''){
+                    html_str = html_str+'</div>';
+                }
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.totalPage, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = '<tr><td colspan="4" style="text-align: center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="location = location">刷新</a></td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+
+            $('.del').on('click', function () {
+                var taskCode = $(this).attr('data');
+                layer.open({
+                    shade: false,
+                    content: '确定删除该任务？',
+                    btn: ['确定', '取消'],
+                    yes: function (index) {
+                        $.ajax({
+                            url: "__ROOT__/api/report/del",
+                            data:{taskCode:taskCode},
+                            type: "post",
+                            success: function (info) {
+                                if (info.err_code === 0) {
+                                    setTimeout(function () {
+                                        //location.href = info.url;
+                                        location.reload();
+                                    }, 1000);
+                                    info.err_msg = '删除成功';
+                                }
+                                layer.msg(info.err_msg);
+                            }
+                        });
+                        layer.close(index);
+                    }
+                });
+                return false;
+            });
+        });
+    };
+    search();
+    // 获取任务列表 end
+</script>
+{/block}

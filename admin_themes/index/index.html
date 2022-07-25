@@ -1,0 +1,257 @@
+{extend name="base" /}
+{block name="css"}
+<style>
+    .index-task a{
+        color: #393939;
+    }
+    .site-doc-color li {
+        display: inline-block;
+        vertical-align: middle;
+        /*width: 200px;*/
+        margin-bottom: 20px;
+        padding: 20px 10px;
+        text-align: center;
+        border-radius: 2px;
+        line-height: 22px;
+        font-size: 14px;
+        height: 68px;
+    }
+</style>
+{/block}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <div class="title-box" style="float: left;">
+                <div class="title">今日跨行调款任务</div>
+            </div>
+            <div class="layui-inline" style="height: 66px;">
+                <label class="layui-form-label" style="text-align:left;margin-right: -58px;margin-top: 4px;color: #393939;font-size: 16px;font-weight: bold;">单位：</label>
+                <div class="layui-input-inline">
+                    <select class="layui-input" style="cursor: pointer;width: 68px;height: 23px;margin-top: 10px;margin-left: 5px;" id="doConversion">
+                        <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元</option>
+                        <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元</option>
+                    </select>
+                </div>
+            </div>
+	    <div style='float: right;margin-top: 12px;'>{$versionNum}</div>
+            <div class="task-info-box index-task m-b-60">
+                <a href="{:url('admin/task/index')}">
+                <div class="task-item canvas">
+                    <div id="in_rate" class="rate"></div>
+                    <div class="total-box">
+                        <div class="total" id="task_total">0</div>
+                        <div class="total-word">任务总计</div>
+                    </div>
+                    <div class="amount-box">合计<span id="total_amt" class="doVersionOne">0</span></div>
+                </div>
+                </a>
+                <a href="{:url('admin/task/index',['status'=>1])}"><div class="task-item info">未出库&nbsp;&nbsp;<span class="gray" id="task_out" class="doVersionOne">0</span><div class="amount-box">合计<span id="out_amt" class="doVersionOne">0</span></div></div></a>
+                <a href="{:url('admin/task/index',['status'=>2])}"><div class="task-item info">在途&nbsp;&nbsp;<span class="gray" id="task_way" class="doVersionOne">0</span><div class="amount-box">合计<span id="way_amt" class="doVersionOne">0</span></div></div></a>
+                <a href="{:url('admin/task/index',['status'=>3])}"><div class="task-item info">已完成&nbsp;&nbsp;<span class="gray" id="task_already" class="doVersionOne">0</span><div class="amount-box">合计<span id="already_amt" class="doVersionOne">0</span></div></div></a>
+                <!--<div class="task-item info">计划中&nbsp;&nbsp;<span class="gray" id="save_take">0</span><div class="amount-box">预约交款合计<span id="save_amt">0</span><br>预约取款合计<span id="take_amt">0</span></div></div>-->
+            </div>
+            <div style="clear:both;"></div>
+            <a href="{:url('admin/clearing/index')}">
+                <div class="block">
+                    <div class="block-word">今日各商行清分总体情况（捆）</div>
+                    <div class="block-info">
+                        <p><b><span id="bundle_cnt">0</span>捆</b></p>
+                        <p class="grayD">合计<span id="bundle_amount" class="doVersionOne">0</span></p>
+                    </div>
+                    <i class="fa fa-angle-right"></i>
+                </div>
+            </a>
+            <a href="{:url('admin/inventory/index')}">
+            <div class="block">
+                <div class="block-word">各商行库存总体情况（包）</div>
+                <div class="block-info">
+                    <p><span class="green">今日新增<span id="pack_today">0</span>包</span>&nbsp;&nbsp;<b><span id="pack_cnt">0</span>包</b></p>
+                    <p class="grayD">合计<span id="pack_amount" class="doVersionOne">0</span></p>
+                </div>
+                <i class="fa fa-angle-right"></i>
+            </div>
+            </a>
+            <!-- <div class="block" style="background-color: #fff;margin-top: 98px;">
+                <p style="margin-bottom: 11px;"><strong>数据量监控</strong></p>
+                <ul class="site-doc-color">
+                {volist name="basicInfo" id="v" key="k"}
+                  <li style="background-color: #EBEBEB;{if $k > 1}margin-left: 40px;{/if}">
+                    <p style="font-size: 30px;margin-top: 17px;">{$v['val']}</p><p>
+                    </p><p tips="{$v['name']}" style="font-size: 16px;margin-top: 10px;color: #a7a4a4;">{$v['name']}</p>
+                  </li>
+                {/volist}
+                </ul>
+            </div> -->
+        </div>
+    </div>
+</div>
+{/block}
+{block name="js"}
+<script src="__JS__/jquery.circliful.min.js"></script>
+<script>
+    function liWidth(){
+        var ulWidth = $('.site-doc-color').outerWidth();
+        var liOutWid = 40;
+        var liPaddLen = 20;
+        var liCount = $('.site-doc-color > li').size();
+        var liBorderLen = liCount*2*2-2;
+        var liSumLen = liOutWid * (liCount-1);
+        var liLen = ((ulWidth - liSumLen - liBorderLen)/liCount)-liPaddLen;
+        $('.site-doc-color li').width(liLen);
+    }
+    liWidth();
+    $(window).resize(function () {
+        liWidth();
+    });
+    $( document ).ready(function() {
+        var task_total = 0;
+        var task_out = 0;
+        var task_way = 0;
+        var save_take = 0;
+        var task_already = 0;
+        var bundle_cnt = 0;
+        var pack_cnt = 0;
+        var pack_today = 0;
+        setInterval(get_info,50000);
+        function get_info() {
+            $.ajax({
+                type: "GET",
+                url: '__ROOT__/api/bank/get_home_page_info',
+                data: {},
+                dataType: "json",
+                success: function(result){
+                    var data = result.data;
+                    if(result.err_code == 0  && data != null){
+                        if(task_total != data.total || task_already != data.already){
+                            var _in_rate = 0;
+                            var _in_count = data.total;
+                            var _in_finish = data.already;
+                            if(_in_count!=0){
+                                _in_rate = _in_finish/_in_count*100;
+                            }
+                            $('#in_rate').html('');
+                            $('#in_rate').circliful(
+                                    {
+                                        animationStep: 10,
+                                        foregroundBorderWidth: 15,
+                                        backgroundBorderWidth: 15,
+                                        foregroundColor:'#1DB3A1',
+                                        percent: _in_rate
+                                    }
+                            );
+                        }
+                        if(task_total != data.total){
+                            task_total = data.total;
+                            $('#task_total').html(task_total);
+                            $('#total_amt').html(data.total_amt_str);
+                        }
+                        if(task_out != data.out_of_stock){
+                            task_out = data.out_of_stock;
+                            if(task_out == 0){
+                                $('#task_out').removeClass().addClass('gary')
+                            }else{
+                                $('#task_out').removeClass().addClass('red')
+                            }
+                            $('#task_out').html(task_out);
+                            $('#out_amt').html(data.out_of_stock_amt_str);
+                        }
+                        if(task_way != data.on_the_way){
+                            task_way = data.on_the_way;
+                            if(task_way == 0){
+                                $('#task_way').removeClass().addClass('gary')
+                            }else{
+                                $('#task_way').removeClass().addClass('red')
+                            }
+                            $('#task_way').html(task_way);
+                            $('#way_amt').html(data.on_the_way_amt_str);
+                        }
+                        if(task_already != data.already){
+                            task_already = data.already;
+                            if(task_already == 0){
+                                $('#task_already').removeClass().addClass('gary')
+                            }else{
+                                $('#task_already').removeClass().addClass('green')
+                            }
+                            $('#task_already').html(task_already);
+                            $('#already_amt').html(data.already_amt_str);
+                        }
+                        var data_save_take = data.save_take.save_cnt + data.save_take.take_cnt;
+                        if(save_take != data_save_take){
+                            save_take = data_save_take;
+                            if(save_take == 0){
+                                $('#save_take').removeClass().addClass('gary')
+                            }else{
+                                $('#save_take').removeClass().addClass('green')
+                            }
+                            $('#save_take').html(save_take);
+                            $('#save_amt').html(data.save_take.save_amt_str);
+                            $('#take_amt').html(data.save_take.take_amt_str);
+                        }
+                        if(bundle_cnt != data.work_load.valid_bundle_cnt){
+                            bundle_cnt = data.work_load.valid_bundle_cnt;
+                            $('#bundle_cnt').html(bundle_cnt);
+                            $('#bundle_amount').html(data.work_load.bundle_amount_str);
+                        }
+                        if(pack_cnt != data.work_store.pack_cnt){
+                            pack_cnt = data.work_store.pack_cnt;
+                            $('#pack_cnt').html(pack_cnt);
+                            $('#pack_amount').html(data.work_store.pack_amount_str);
+                        }
+                        if(pack_today != data.work_store.pack_today){
+                            pack_today = data.work_store.pack_today;
+                            $('#pack_today').html(pack_today);
+                        }
+                        $("#doConversion").trigger("change");
+                    }
+    //边缘弹出
+    //                    layer.open({
+    //                        type: 1
+    //                        ,offset: 'rb' //具体配置参考：offset参数项
+    //                        ,anim:2
+    //                        ,content: '<div style="padding: 20px 80px;">内容</div>'
+    //                        ,btn: '关闭全部'
+    //                        ,btnAlign: 'c' //按钮居中
+    //                        ,shade: 0 //不显示遮罩
+    //                        ,yes: function(){
+    //                            layer.closeAll();
+    //                        }
+    //                    });
+                }
+            });
+        }
+        get_info();
+
+    //元万元亿切换
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+
+        $('.doVersionOne').each(function(i,e){
+            if (!$(this).attr('number')) {
+                $(this).attr('number',$(this).text());
+            }
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+            
+            $(this).text(numberNew);                
+        });
+    });
+    });
+</script>
+{/block}

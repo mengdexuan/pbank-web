@@ -1,0 +1,414 @@
+{extend name="base" /}
+{block name="body"}
+<style>
+    .tips {
+        display: inline-block;
+        margin: 0 0 0 20px;
+        color: #EE713B;
+    }
+    .task-type{
+        height: 36px;
+        line-height: 36px;
+    }
+    .task-type label{
+        cursor: pointer;
+    }
+    .task-type.layui-input-inline{
+        width: 105px;
+        margin-right: 0;
+    }
+    .layui-form-label{
+        width: 90px;
+    }
+    .layui-input-block{
+        margin-left: 120px;
+    }
+    #payment_dialog h1 {
+        font-size: 24px;
+        line-height: 90px;
+        text-align: center;
+    }
+    #payment_dialog div {
+        width: 280px;
+        height: 50px;
+        margin: auto;
+        line-height: 70px;
+    }
+    #payment_dialog div input {
+        width: 100%;
+        height: 100%;
+        outline: none;
+        font-size: 24px;
+        padding: 5px 10px;
+    }
+
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <form class="" id="search" action="{:url('admin/task/export_save_take_report',['start_date'=>$start_date,'end_date'=>$end_date])}"  style="display:block;width:100%;background:#fff;position:fixed;top:45px;padding-top:15px;z-index:1000;">
+                <div class="layui-form-item">
+                    <!--<div class="layui-input-inline" style="width: 70px;">
+                        <button type="button" class="layui-btn layui-btn-primary layui-btn-small quick yesterday ">昨天</button>
+                    </div>
+                    <div class="layui-input-inline" style="width: 70px;">
+                        <button type="button" class="layui-btn layui-btn-primary layui-btn-small quick today">今天</button>
+                    </div>-->
+                    <div class="layui-input-inline w82">
+                        <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="before">前一天</a>
+                    </div>
+                    <div class="layui-input-inline date-box">
+                        <input type="text" name="beginTime" placeholder="开始日期" id="beginTime"  value="{$start_date}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                    </div>
+                    <div class="layui-input-inline wa date-center">-</div>
+                    <div class="layui-input-inline date-box">
+                        <input type="text" name="endTime" placeholder="结束日期" id="endTime"  value="{$end_date}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                    </div>
+                    <div class="layui-input-inline w82">
+                        <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="after">后一天</a>
+                    </div>
+                    <div class="layui-input-inline" style="width: 70px;">
+                        <button type="button" class="layui-btn layui-btn-small quick search">查询</button>
+                    </div>
+
+
+
+                    <br><br><br>
+                    <div class="layui-input-inline task-type inline-block-mr">
+                        <label><input type="radio" name="status" value="4" {if $status ==''} checked {/if}> 全部（<span class="total" id="all">0</span>）</label>
+                    </div>
+                    <div class="layui-input-inline task-type inline-block-mr" >
+                        <label><input type="radio" name="status" value="2" {if $status =="1"} checked {/if}> 未结算（<span class="gray" id="ready">0</span>）</label>
+                    </div>
+                    <div class="layui-input-inline task-type inline-block-mr" >
+                        <label><input type="radio" name="status" value="3" {if $status =="2"} checked {/if}> 已结算（<span class="gray" id="working">0</span>）</label>
+                    </div>
+                </div>
+            </form>
+            <div style="height: 120px;"></div>
+
+            <div class="layui-inline">
+                <label class="layui-form-label" style="padding:9px 15px 0 0;text-align:left;">任务号扫描</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="task_code" autocomplete="off" placeholder="" value="" id="data-no-scan" class="layui-input data-no-scan task_code">
+                </div>
+                <span class="tips">请扫描任务号</span>
+            </div>
+
+            <table class="new-table" id="data_table">
+                <thead>
+                <tr>
+                    <th>对应任务号</th>
+                    <th class="txtR p-r-20">本次结算金额</th>
+                    <th>支付行</th>
+                    <th>收款行</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <td colspan="7" class="text-center">查询中</td>
+                </tbody>
+            </table>
+            <div id="page_box"></div>
+        </div>
+    </div>
+</div>
+<!--创建任务-->
+<div id="payment_dialog" style="display: none">
+    <h1>请输入结算密码</h1>
+    <div>
+        <input type="password" name="password">
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    var app_stage = {$app_stage};
+    var is_all = true;
+    if(app_stage > 1){
+        is_all = false;
+    }
+    form.on('switch(switchTest)', function(data){
+        is_all = data.elem.checked;
+        search();
+    });
+    // 获取焦点
+    $('#data-no-scan').focus();
+    $('body').click(function(){
+        if($('#data-no-scan').is(':focus')){
+            $('.tips').show();
+        }else {
+            $('.tips').hide();
+        }
+    });
+    $('.task_code').on("keypress", function(e){
+        var kc = e.which || e.keyCode;
+        if(kc == 13){
+            var thisval = $.trim($(this).val());
+            try{
+                thisval = JSON.parse(thisval).bc;
+                if($.trim(thisval) != ''){
+                    $(this).val(thisval);
+                }
+            }catch(e){
+
+            }
+            if(thisval == ""){
+                layer.msg("请扫描任务号！");
+            }else{
+                if(!(new RegExp("^D[0-9]{19}$")).test(thisval)){
+                    layer.msg("任务号不正确，请重新扫描！");
+                }else{
+                    var task_code = $.trim($(this).val());
+                    search();
+                    // window.location.href='__ROOT__/admin/task/view_task/task_code/'+task_code+'.html';
+                }
+            }
+        }
+    });
+    $("input[name='status']").change(function(){
+        search();
+    });
+    var _type = 'today';
+    var start = {
+        elem:'focus',
+        istoday: true
+        ,choose: function(datas){
+            //$('.layui-input-inline').find('.layui-btn').removeClass('layui-btn-primary').addClass('layui-btn-primary')
+        }
+    };
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    document.getElementById('endTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    $('.today').click(function () {
+        button_c(this);
+        var date = GetDateStr(0);
+        $('#beginTime').val(date);
+        $('#endTime').val(date);
+        search();
+    });
+    $('.yesterday').click(function () {
+        button_c(this);
+        var date = GetDateStr(-1);
+        $('#beginTime').val(date);
+        $('#endTime').val(date);
+        search();
+    });
+    function getDate (str){
+        var y = str.getFullYear();
+        var m = Number(str.getMonth())+1;
+        if(m.toString().length<2){
+            m = '0'+m;
+        }
+        var d = str.getDate();
+        if(d.toString().length<2){
+            d = '0'+d;
+        }
+        var date = y + '-' + m + '-' + d;
+        return date;
+    }
+    $('#before').click(function(){
+        var start = $('#beginTime').val();
+        var end = $('#endTime').val();
+        var curDate = '';
+        if(start!=''){
+            curDate = Date.parse(start);
+        }else if(start == '' && end != ''){
+            curDate = Date.parse(end);
+        }else if(start == '' && end == ''){
+            layer.msg('请选择一个时间点！');
+            return false;
+        }
+        var preDate = new Date(curDate - 24*60*60*1000);
+        $('#beginTime').val(getDate(preDate));
+        $('#endTime').val(getDate(preDate));
+        location.href = '__ROOT__/admin/settlement/index/start_date/'+getDate(preDate)+'/end_date/'+getDate(preDate)+'.html';
+    });
+    $('#after').click(function(){
+        var start = $('#beginTime').val();
+        var end = $('#endTime').val();
+        var curDate = '';
+        if(end!=''){
+            curDate = Date.parse(end);
+        }else if(start != '' && end == ''){
+            curDate = Date.parse(start);
+        }else if(start == '' && end == ''){
+            layer.msg('请选择一个时间点！');
+            return false;
+        }
+        var nextDate = new Date(curDate + 24*60*60*1000);
+        $('#beginTime').val(getDate(nextDate));
+        $('#endTime').val(getDate(nextDate));
+        location.href = '__ROOT__/admin/settlement/index/start_date/'+getDate(nextDate)+'/end_date/'+getDate(nextDate)+'.html';
+    });
+    $('.search').click(function () {
+        button_c(this);
+        var start_date = $('#beginTime').val();
+        var end_date = $('#endTime').val();
+        if(get_time(start_date) >get_time(end_date)){
+            layer.msg('开始时间不能大于结束时间');
+            return false;
+        }
+        if(start_date == '' && end_date == ''){
+            layer.msg('请选择开始时间与结束时间');
+            return false;
+        } else if(start_date == '' && end_date != ''){
+            location.href = '__ROOT__/admin/settlement/index/end_date/'+end_date+'.html';
+        } else if(start_date != '' && end_date == ''){
+            location.href = '__ROOT__/admin/settlement/index/start_date/'+start_date+'.html';
+        } else {
+            location.href = '__ROOT__/admin/settlement/index/start_date/'+start_date+'/end_date/'+end_date+'.html';
+        }
+
+    });
+    function button_c(_this) {
+        $('.layui-input-inline').find('.layui-btn').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        $(_this).removeClass('layui-btn-primary');
+    }
+
+    function search(curr){
+        var status = $("input[name='status']:checked").val();
+        var begin_time = $.trim($('#beginTime').val());
+        var end_time = $.trim($('#endTime').val());
+        var task_code = $.trim($('.task_code').val());
+        var limit = 10;
+        layer.load(2);
+        var url = "__ROOT__/api/bank/query_settlements";
+        var op = {
+            page: curr || 1,
+            // all:is_all,
+            confirmStatus:status || 0,
+            beginDate:begin_time + " 00:00:00",
+            endDate:end_time + " 23:59:59",
+            taskCode:task_code,
+            limit: limit //向服务端传的参数，此处只是演示
+        };
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result;
+            var html_str = '';
+            if(data != null && data.taskInfo.length > 0){
+                var _all = $('#all');
+                var _ready = $('#ready');
+                var _working = $('#working');
+                _all.html(data.total);
+                _ready.html(data.unAccount);
+                _working.html(data.account);
+                var tasks = data.taskInfo;
+                for(var i = 0; i < tasks.length; i++){
+                    var color = '';
+                    if(tasks[i].task_status != 3){
+                        color = 'red';
+                    }
+                    var css_str = 'type_'+tasks[i].task_status;
+                    var style = '';
+
+                    html_str = html_str + "<tr class ='low "+css_str+"' "+style+">";
+                    html_str = html_str + "<td>"+tasks[i].taskCode+"</td>";
+                    //html_str = html_str + "<td>"+tasks[i].task_type_str+"</td>";
+                    html_str = html_str + "<td class='txtR p-r-20'>"+tasks[i].taskAmountStr+"</td>";
+                    html_str = html_str + "<td>"+tasks[i].inBank+"</td>";
+                    html_str = html_str + "<td>"+tasks[i].outBank+"</td>";
+                    // html_str = html_str + "<td class='txtR p-r-20'>"+tasks[i].syncAmountStr+"</td>";
+                    html_str = html_str + "<td class='"+color+"'>"+tasks[i].taskStatus+"</td>";
+
+                    html_str = html_str + "<td>";
+                    html_str = html_str + '<a href="__ROOT__/admin/task/view_task/task_code/'+tasks[i].taskCode+'.html" >查看</a>';
+                    if (tasks[i].confirmStatus === 1) {
+                        html_str = html_str + '<a class="payment-btn" style="margin-left:10px" data-taskcode=' + tasks[i].taskCode + '>结算</a></td>';
+                    }
+                    html_str = html_str + '</tr>';
+                }
+                if(html_str == ''){
+                    html_str = '<tr class="low"><td colspan="8" class="text-center">暂无数据</td></tr>';
+                }
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: Math.ceil(data.total / limit), //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr,_type);
+                        }
+                    }
+                });
+            }else{
+                html_str = '<tr><td colspan="7" class="text-center">暂无数据</td></tr>';
+            }
+                $('#data_table').find('tbody').html(html_str);
+                $('#data_table').find('tbody').hide();
+                $('#data_table').find('tbody').fadeIn(500);
+                // 确权
+                $('.payment-btn').click(function () {
+                    var taskCode = $(this).data("taskcode");
+                    layer.open({
+                        type: 1,
+                        shade: false,
+                        title: '数字货币结算',
+                        area: ['500px', '300px'],
+                        content: $('#payment_dialog'),
+                        btn: ['确定', '取消'],
+                        yes: function(){
+                            payment(taskCode);
+                        }
+                        ,btn2: function(){
+                            hidePayment();
+                        }
+                        ,cancel: function(){
+                            hidePayment();
+                        }
+                    });
+                });
+        });
+    };
+    search(1,$('#beginTime').val());
+    function payment(taskCode){
+        var password = $('#payment_dialog input').val();
+
+        $.ajax({
+            url: '__ROOT__/api/bank/update_settlement_status',
+            data: {
+                taskCode : taskCode,
+                password : password,
+            },
+            success: function (info) {
+                if (info.err_code == 0) {
+                    setTimeout(function () {
+                        location.reload();
+                    }, 1000);
+                    info.err_msg = '结算成功';
+                }
+                layer.msg(info.err_msg);
+            }
+        });
+    }
+    function hidePayment(){
+        $('.payment-type').eq(1).removeAttr('checked').removeAttr('disabled');
+        $(".payment-from").removeAttr('disabled');;
+        $(".payment-to").removeAttr('disabled');
+        $('#payment_dialog').hide();
+        $(".payment-from").val('');
+        $(".payment-to").val('');
+        $('.out_task').html('--');
+        $('.out_plan').html('--');
+        $('.out_wait').html('--');
+        $('.out_task_sum').html('--');
+        $('.out_plan_sum').html('--');
+        $('.out_wait_sum').html('--');
+        $('.in_task').html('--');
+        $('.in_plan').html('--');
+        $('.in_wait').html('--');
+        $('.in_task_sum').html('--');
+        $('.in_plan_sum').html('--');
+        $('.in_wait_sum').html('--');
+    }
+</script>
+<script src="__JS__/jquery.circliful.min.js"></script>
+{/block}

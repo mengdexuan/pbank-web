@@ -1,0 +1,161 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <ul class="layui-tab-title">
+            <li class="layui-this">任务列表</li>
+        </ul>
+        <div class="layui-tab-content">
+            <div class="layui-tab-item layui-show">
+                <table class="layui-table" id="data_table">
+                    <thead>
+                    <tr>
+                        <th>执行时间</th>
+                        <th>任务单号</th>
+                        <th>发出行</th>
+                        <th>目的行</th>
+                        <th>金额</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td colspan="7" align="center">查询中</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div id="page_box"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    $('.search').click(function(){
+        search();
+    });
+    function search(curr){
+        layer.load(2);
+
+        var url = "__ROOT__/api/bank/query_tasks";
+        var op = {
+            cur_page: curr || 1,
+            date_type:'tomorrow'
+            //cur_num: 1 //向服务端传的参数，此处只是演示
+        };
+
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+
+            var html_str = '';
+            if(result.err_code == 0 && data != null){
+                var tasks = data.tasks;
+                for(var i = 0; i < tasks.length; i++){
+                    html_str = html_str + "<tr>";
+                    html_str = html_str + "<td>"+tasks[i].task_time+"</td>";
+                    html_str = html_str + "<td>"+tasks[i].task_code+"</td>";
+                    html_str = html_str + "<td>"+tasks[i].out_bank_str+"</td>";
+                    html_str = html_str + "<td>"+tasks[i].in_bank_str+"</td>";
+                    html_str = html_str + "<td>"+tasks[i].task_amount_str+"</td>";
+                    html_str = html_str + "<td>"+tasks[i].task_status_str+"</td>";
+                    html_str = html_str + '<td><a href="__ROOT__/admin/query/view_task/task_code/'+tasks[i].task_code+'.html" class="layui-btn layui-btn-normal layui-btn-mini">查看</a>';
+                    if(tasks[i].task_status < 2) {
+                        html_str = html_str + ' <a href="__ROOT__/admin/task/edit_task/task_code/' + tasks[i].task_code + '.html" class="layui-btn layui-btn-normal layui-btn-mini">修改</a>';
+                        html_str = html_str + ' <a href="__ROOT__/api/bank/remove_task" data-code="'+tasks[i].task_code+'" class="layui-btn layui-btn-danger layui-btn-mini ajax-delete">删除</a>';
+                    }
+                    if(tasks[i].task_status == 0){
+                        html_str = html_str + ' <a href="__ROOT__/api/bank/approve_task" data-code="'+tasks[i].task_code+'" class="layui-btn layui-btn-mini ajax-action">审核</a>';
+                    }
+                    html_str = html_str + '</td>';
+                    html_str = html_str + '<tr>';
+                }
+
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = '<tr><td colspan="6" align="center">数据错误：'+result.err_msg+'</td></tr>';
+            }
+            if(html_str != ''){
+                $('#data_table').find('tbody').html(html_str);
+                $('#data_table').find('tbody').fadeOut(100);
+                $('#data_table').find('tbody').fadeIn(100);
+            }
+            $('.ajax-delete').on('click', function () {
+                var _href = $(this).attr('href');
+                var task_code = $(this).attr('data-code');
+                layer.open({
+                    shade: false,
+                    content: '确定删除？',
+                    btn: ['确定', '取消'],
+                    yes: function (index) {
+                        $.ajax({
+                            url: _href,
+                            data:{task_code:task_code},
+                            type: "post",
+                            success: function (info) {
+                                if (info.err_code === 0) {
+                                    setTimeout(function () {
+                                        location.href = info.url;
+                                    }, 1000);
+                                    info.err_msg = '删除成功';
+                                }
+                                layer.msg(info.err_msg);
+                            }
+                        });
+                        layer.close(index);
+                    }
+                });
+
+                return false;
+            });
+
+            $('.ajax-action').on('click', function () {
+                var _href = $(this).attr('href');
+                var task_code = $(this).attr('data-code');
+                var _this = $(this);
+                layer.open({
+                    shade: false,
+                    content: '确定审核此任务？',
+                    btn: ['确定', '取消'],
+                    yes: function (index) {
+                        $.ajax({
+                            url: _href,
+                            data:{task_code:task_code},
+                            type: "post",
+                            success: function (info) {
+                                if (info.err_code === 0) {
+//                                    setTimeout(function () {
+//                                        location.href = info.url;
+//                                    }, 1000);
+                                    _this.remove();
+                                    info.err_msg = '审核成功';
+                                }
+                                layer.msg(info.err_msg);
+                            }
+                        });
+                        layer.close(index);
+                    }
+                });
+
+                return false;
+            });
+
+        });
+    };
+    //运行
+    search();
+</script>
+{/block}

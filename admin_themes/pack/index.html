@@ -1,0 +1,167 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <div class="title-box">
+                <div class="title">查包</div>
+            </div>
+            <form class="layui-form layui-form-pane" action="">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">包号</label>
+                    <div class="layui-input-inline" style="width: 400px;">
+                        <input type="text" name="pack_code" autocomplete="off" placeholder="" value="{$pack_code}" class="layui-input pack_code">
+                    </div>
+                    <div class="layui-input-inline">
+                        <button class="layui-btn layui-btn-small" lay-submit lay-filter="search">查询</button>
+                    </div>
+                </div>
+            </form>
+            {if $data}
+            <div class="layui-form-item" style="margin: 10px 0;">
+                <a class="layui-btn layui-btn-normal layui-btn-small" href="{:url('admin/task/download_pack_file',['pack_code'=>$data['pack_code']])}">下载对应的GZH文件</a>
+            </div>
+
+            <div class="title-box" style="margin: 10px 0;">
+                <div class="title">包号 {$pack_code}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline m-r-48">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 金额</label>
+                    <div class="pack-info-text doVersionOne">{:number_format($data['pack_amount'],2,'.',',')}</div>
+                </div>
+                <div class="info-inline m-r-48">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 状态</label>
+                    <div class="pack-info-text">{:get_pack_status($data['pack_status'])}</div>
+                </div>
+                <div class="info-inline m-r-48">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 所属银行</label>
+                    <div class="pack-info-text width-auto">
+                        {if $data['owner_bank'] == get_cur_bank()}
+                        本行
+                        {else}
+                        {:getBankNameByCode($data['owner_bank'])}
+                        {/if}
+                    </div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-inline m-r-48">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 打包人</label>
+                    <div class="pack-info-text">{$data['pack_name']}</div>
+                </div>
+                <div class="info-inline m-r-48">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 打包时间</label>
+                    <div class="pack-info-text">{$data['pack_time']}</div>
+                </div>
+                <div class="info-inline m-r-48">
+                    <label class="pack-info-label"><i class="icon_bolck_g_12"></i> 打包银行</label>
+                    <div class="pack-info-text width-auto">
+                        {if $data['creator_bank'] == get_cur_bank()}
+                        本行
+                        {else}
+                        {:getBankNameByCode($data['creator_bank'])}
+                        {/if}
+                    </div>
+                </div>
+            </div>
+            <div class="pack-box" style="width:{$box_width}px;">
+            </div>
+            <div id="page_box"></div>
+            {else}
+            {if $is_search == 1}
+            查询无结果
+            {/if}
+            {/if}
+        </div>
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+{if $data}
+<script>
+    $('.search').click(function(){
+        search();
+    });
+    function search(curr){
+        layer.load(2);
+        var pack_code = $.trim($('.pack_code').val());
+        var url = "__ROOT__/api/bank/query_pack_detail";
+        var op = {
+            cur_page: curr || 1,
+            pack_code:pack_code,
+            cur_num: 10000 //向服务端传的参数，此处只是演示
+        };
+
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var bundles = data.bundles;
+            var html_str = '';
+            if(result.err_code == 0){
+                for(var i = 0; i < bundles.length; i++){
+                    if(data.pack_status != 1){
+                        html_str = html_str + '<a href="__ROOT__/admin/bundle/index/bundle_code/'+bundles[i].bundle_code+'.html">';
+                    }
+                    html_str = html_str + '<div class="pack-info">';
+                    html_str = html_str + '<div class="bank_short">'+bundles[i].creator_bank_short_str+'</div>';
+                    html_str = html_str + '<div class="bank_belong">'+bundles[i].creator_bank_subordinate_str+'</div>';
+                    html_str = html_str + '<div class="bundle_code">'+bundles[i].bundle_code+'</div>';
+                    html_str = html_str + "</div>";
+                    if(data.pack_status != 1){
+                        html_str = html_str + "</a>";
+                    }
+                }
+
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="window.reload();">刷新</a>';
+            }
+            $('.pack-box').html(html_str);
+            $('.pack-box').hide();
+            $('.pack-box').fadeIn(500);
+        });
+    };
+    //运行
+    search();
+
+    //鼠标悬停提示特效
+    $(".doVersionOne").hover(function() {
+        openMsg($(this));
+    }, function() {
+        layer.close(subtips);
+    });
+    function openMsg(_this) {
+        var num = doVersionOne(_this);
+        subtips = layer.tips(num, '.doVersionOne',{tips:[1,'#ff6700'],time: 30000});
+    } 
+    // 元万元亿切换
+    function doVersionOne(_this){
+        if (!_this.attr('number')) {
+            _this.attr('number',_this.text());
+        }
+        var numberOld = $.trim(_this.attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+        var numberOld = numberOld.replace(/,/g, "")/10000;
+        if (numberOld >= 1) {
+            var numberNew = number_format(numberOld,2,'.',',') + '万元';
+        }else{
+            var numberNew = numberOld + '万元';
+        }
+        return numberNew;    
+    }
+    //END 鼠标悬停提示特效
+</script>
+{/if}
+{/block}

@@ -1,0 +1,244 @@
+{extend name="base" /}
+{block name="body"}
+<style>
+    .save_div {
+        height: 42px;
+        line-height: 42px;
+        padding: 0 20px;
+        font-size: 14px;
+    }
+    .save_div b {
+        display: inline-block;
+        margin-right: 15px;
+        font-weight: normal;
+    }
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <div class="title-box" style="margin: 10px 0;">
+                <div class="title">参数列表</div>
+            </div>
+            <div class="layui-tab-content">
+                <div class="layui-tab-item layui-show">
+                    <table class="new-table" id="data_table">
+                        <thead>
+                        <tr>
+                            <th>序号</th>
+                            <th>名称</th>
+                            <th>保留天数</th>
+                            <th>key值</th>
+                            <th>操作</th>
+                        </tr>
+
+                        </thead>
+                        <tbody>
+
+                        <tr>
+                            <td colspan="5" class="text-center">查询中</td>
+                        </tr>
+                        
+                        </tbody>
+                    </table>
+                    <div id="page_box"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!--修改参数设置-->
+<div id="save_dialog" style="display: none">
+    <div class="save_div" style="margin-top:15px;">
+        <b>参数名称</b>
+        <span class="parameter_name"></span>
+    </div>
+    <div class="save_div">
+        <b>保留天数</b>
+        <input type="text" class="save_day" required style="height:26px;line-height:26px;text-indent:5px;" onkeyup="this.value=this.value.replace(/\D/g,'')">
+    </div>
+</div>
+<!--修改元万元参数设置-->
+<div id="save_dialog_tow" style="display: none">
+    <div class="save_div">
+        <b></b>
+        
+    </div>
+    <div class="layui-inline" style="height: 47px;margin-top: -13px;">
+        <label class="layui-form-label" style="text-align:left;margin-right: -21px;margin-left: 5px;">保留天数：</label>
+        <div class="layui-input-inline">
+            <input type="text" class="save_day_tow layui-input" required style="width: 172px;height: 33px;line-height:26px;text-indent:5px;" onkeyup="this.value=this.value.replace(/\D/g,'')">
+        </div>
+    </div>
+    <div class="layui-inline" style="height: 32px;">
+        <label class="layui-form-label" style="text-align:left;margin-right: -21px;margin-left: 5px;">单位：</label>
+        <div class="layui-input-inline">
+            <select class="layui-input" style="cursor: pointer;width: 68px;" id="doConversion">
+                <option value="y">元</option>
+                <option value="w">万元</option>
+            </select>
+        </div>
+    </div>
+</div>
+<input type="hidden" id="parameDoConversion" value="{$parameDoConversion}">
+<input type="hidden" id="parameDoConversionTime" value="{$parameDoConversionTime}">
+{/block}
+{block name="script"}
+<script>
+    var parameDoConversion = $('#parameDoConversion').val();
+    var parameDoConversionTime = $('#parameDoConversionTime').val();
+    function search(curr){
+        layer.load(2);
+        var url = "__ROOT__/api/bank/dictionarys";
+        var op = {
+            cur_page: curr || 1
+        };
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            console.log(data);
+            var html_str = '<tr><td>0</td><td>系统金额显示</td><td>'+parameDoConversionTime+'</td><td>'+parameDoConversion+'</td><td><a class="layui-btn layui-btn-danger layui-btn-mini doConversion">修改</a></td></tr>';
+            if(result.err_code == 0){
+                for(var i = 0; i < data.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td class='eq'>"+(i+1)+"</td>";
+                    html_str = html_str + "<td>"+data[i].m_name+"</td>";
+                    html_str = html_str + "<td>"+data[i].m_value+"</td>";
+                    html_str = html_str + "<td>"+data[i].m_key+"</td>";
+                    html_str = html_str + '<td><a href="__ROOT__/api/bank/update_dictionary" data-key="'+data[i].m_key+'" data-name="'+data[i].m_name+'" data-value="'+data[i].m_value+'" class="layui-btn layui-btn-danger layui-btn-mini ajax-del">修改</a>'+
+                        '</td>';
+                    html_str = html_str + '<tr>';
+                }
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.total_page, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                html_str += '<tr><td colspan="5" class="text-center">'+result.err_msg+' 请<a href="javascript:;" class="layui-btn layui-btn-normal layui-btn-mini" onclick="location=location">刷新</a></td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+            $('#data_table .eq').each(function(){
+                var eq = $('#data_table .eq').index(this);
+                $(this).html(eq+1);
+            });
+
+            function modify(){
+                var value = $('.save_day').val();
+                var key = $('.save_day').attr('data-key');
+                console.log(key);
+                console.log(value);
+                $.ajax({
+                    url: '__ROOT__/api/bank/update_dictionary',
+                    data:{
+                        key: key,
+                        value: value
+                    },
+                    type: "post",
+                    data_type:'json',
+                    success: function (info) {
+                        if (info.err_code == 0) {
+                            setTimeout(function () {
+                                location.reload();
+                            }, 1000);
+                            layer.msg('修改成功');
+                            resetform()
+                        }else {
+                            layer.msg(info.err_msg);
+                        }
+                    }
+                });
+            }
+            $('.ajax-del').on('click', function () {
+                var save_dom = $('#save_dialog');
+                var m_name = $(this).attr('data-name');
+                var m_key = $(this).attr('data-key');
+                var m_value = $(this).attr('data-value');
+                $('.parameter_name').html(m_name);
+                $('.save_day').attr('placeholder', m_value);
+                $('.save_day').attr('data-key', m_key);
+                layer.open({
+                    type: 1,
+                    area: ['380px', '220px'],
+                    title:'修改参数',
+                    content: save_dom,
+                    btn: ['确定', '取消'],
+                    yes: function(){
+                        modify();
+                    }
+                    ,btn2: function(){
+                        $('#save_dialog').hide();
+                    }
+                    ,cancel: function(){
+                        $('#save_dialog').hide();
+                    }
+                });
+                return false;
+            });
+            $('.doConversion').on('click', function () {
+                var type = $(this).parent().prev().text();
+                var time = $(this).parent().prev().prev().text();
+                $('#doConversion option').each(function(){
+                    if ($(this).text() == type) {
+                        $(this).attr('selected',true);
+                    }
+                });
+                $('.save_day_tow').val(time);
+                layer.open({
+                    type: 1,
+                    area: ['380px', '220px'],
+                    title:'修改参数',
+                    content: $('#save_dialog_tow'),
+                    btn: ['确定', '取消'],
+                    yes: function(){
+                        layer.load(2);
+                        var times = $('.save_day_tow').val();
+                        var types = $('#doConversion option:selected').text();
+                        $.ajax({
+                            url: '__ROOT__/admin/parameter/parame',
+                            data:{
+                               type:types,
+                               time:times
+                            },
+                            type: "post",
+                            data_type:'json',
+                            success: function (info) {
+                                layer.msg(info.errMsg);
+                                location.href = '';
+                            },
+                            error: function(){
+                                layer.msg('稍后尝试');
+                            }
+                        });
+                        resetload();
+                    }
+                    ,btn2: function(){
+                        $('#save_dialog_tow').hide();
+                    }
+                    ,cancel: function(){
+                        $('#save_dialog_tow').hide();
+                    }
+                });
+                return false;
+            });
+        });
+    };
+    //运行
+    search();
+    //取消layer load
+    function resetload(){
+        setTimeout(function(){
+          layer.closeAll('loading');
+        }, 2000);
+    }
+</script>
+{/block}

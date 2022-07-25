@@ -1,0 +1,466 @@
+{extend name="base" /}
+{block name="body"}
+<style>
+    .tips {
+        display: inline-block;
+        margin: 0 0 0 20px;
+        color: #EE713B;
+    }
+    .task-type{
+        height: 36px;
+        line-height: 36px;
+    }
+    .task-type label{
+        cursor: pointer;
+    }
+    .task-type.layui-input-inline{
+        width: 105px;
+        margin-right: 0;
+    }
+    .layui-form-label{
+        width: 90px;
+    }
+    .amount-table thead,
+    .amount-table tfoot{
+        display: block;
+        width: 400px;
+    }
+    .amount-table tbody {
+        height: 172px;
+        overflow-y:scroll;
+        display:block
+    }
+    .amount-table th,
+    .amount-table tr {
+        text-align: center !important;
+    }
+    .input-box input {
+        width: 18px;
+        height: 18px;
+        float: left;
+        margin: 9px 3px 0 0
+    }
+    .layui-table thead tr:not(first-child) {
+        background-color: #fff;
+    }
+    #save_dialog select {
+        min-width: 100px;
+        height: 30px;
+        margin: 0 10px 0 0;
+        padding: 0 5px;
+        line-height: 30px;
+        border: 1px solid #e6e6e6;
+        background: #fff;
+        border-radius: 4px;
+    }
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <form class="" id="search" action=""  style="display:block;width:100%;background:#fff;position:fixed;top:45px;padding-top:15px;z-index:1000;">
+                <div class="layui-form-item">
+                    <!--<div class="layui-input-inline" style="width: 70px;">
+                        <button type="button" class="layui-btn layui-btn-primary layui-btn-small quick yesterday">昨天</button>
+                    </div>
+                    <div class="layui-input-inline" style="width: 70px;">
+                        <button type="button" class="layui-btn layui-btn-small quick today">今天</button>
+                    </div>-->
+                    <div class="layui-input-inline w82">
+                        <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="before">前一天</a>
+                    </div>
+                    <div class="layui-input-inline date-box">
+                        <input type="text" name="beginTime" placeholder="开始日期" id="beginTime"  value="{$query_date}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                    </div>
+                    <div class="layui-input-inline wa date-center">-</div>
+                    <div class="layui-input-inline date-box">
+                        <input type="text" name="beginTime" placeholder="结束日期" id="endTime"  value="{$query_date}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                    </div>
+                    <div class="layui-input-inline w82">
+                        <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="after">后一天</a>
+                    </div>
+                    <div class="layui-input-inline" style="width: 141px;">
+                        <input type="text" name="bankName" style="height: 32px;" placeholder='银行名称' class="layui-input" id="bankName">
+                    </div>
+                    <div class="layui-input-inline w70">
+                        <button type="button" class="layui-btn layui-btn-small search">查询</button>
+                    </div>
+
+                    <br><br><br>
+                    <div class="layui-input-inline task-type inline-block-mr">
+                        <label><input type="radio" name="status" value="" {if $status ==''} checked {/if}> 全部（<span class="total" id="all">0</span>）</label>
+                    </div>
+                    <div class="layui-input-inline task-type inline-block-mr" >
+                        <label><input type="radio" name="status" value="1" {if $status =="1"} checked {/if}> 未出库（<span class="gray" id="ready">0</span>）</label>
+                    </div>
+                    <div class="layui-input-inline task-type inline-block-mr" >
+                        <label><input type="radio" name="status" value="2" {if $status =="2"} checked {/if}> 在途（<span class="gray" id="working">0</span>）</label>
+                    </div>
+                    <div class="layui-input-inline task-type inline-block-mr" >
+                        <label><input type="radio" name="status" value="3" {if $status =="3"} checked {/if}> 已完成（<span class="gray" id="finish">0</span>）</label>
+                    </div>
+                    <div class="layui-input-inline task-type inline-block-mr" >
+                        <label><input type="radio" name="status" value="10" {if $status =="10"} checked {/if}> 退回中（<span class="gray" id="finish">0</span>）</label>
+                    </div>
+                    <div class="layui-input-inline task-type inline-block-mr" >
+                        <label><input type="radio" name="status" value="11" {if $status =="11"} checked {/if}> 已退回（<span class="gray" id="finish">0</span>）</label>
+                    </div>
+                </div>
+            </form>
+            <div class="title-box" style="margin: 60px 0 10px 0;">
+                <div class="title">代理任务概览</div>
+            </div>
+            <div style="margin-top:18px;">
+                <label class="layui-form-label" style="padding:9px 15px 0 0;text-align:left;">任务号扫描</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="task_code" autocomplete="off" placeholder="" value="" id="data-no-scan" class="layui-input data-no-scan task_code">
+                </div>
+                <span class="tips">请扫描任务号</span>
+            </div>
+            <div class="layui-inline" style="height: 32px;float: right; margin-top: -31px; margin-bottom: 39px; margin-right: 207px;">
+                <label class="layui-form-label" style="text-align:left;margin-right: -65px;">单位：</label>
+                <div class="layui-input-inline">
+                    <select class="layui-input" style="cursor: pointer;" id="doConversion">
+                        <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元</option>
+                        <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元</option>
+                    </select>
+                </div>
+            </div>
+            <table class="new-table" id="data_table">
+                <thead>
+                <tr>
+                    <th>任务号</th>
+                    <th>调出</th>
+                    <th>调入</th>
+                    <th class="txtR p-r-20">任务总金额</th>
+                    <th class="txtR p-r-20">双流同步</th>
+                    <th class="txtR p-r-20">非双流同步</th>
+                    <th>状态</th>
+                    <th>回退金额</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr class="low"><td colspan="7" class="text-center">查询中</td></tr>
+                </tbody>
+            </table>
+            <div id="page_box"></div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    var is_all = false;
+    form.on('switch(switchTest)', function(data){
+        is_all = data.elem.checked;
+        search();
+    });
+    $("input[name='status']").change(function(){
+        search();
+    });
+    // 获取焦点
+    // $('#data-no-scan').focus();
+    $('body').click(function(){
+        if($('#data-no-scan').is(':focus')){
+            $('.tips').show();
+        }else {
+            $('.tips').hide();
+        }
+    });
+    $('.task_code').on("keypress", function(e){
+        var kc = e.which || e.keyCode;
+        if(kc == 13){
+            var thisval = $.trim($(this).val());
+            try{
+                thisval = JSON.parse(thisval).bc;
+                if($.trim(thisval) != ''){
+                    $(this).val(thisval);
+                }
+            }catch(e){
+
+            }
+            if(thisval == ""){
+                layer.msg("请扫描任务号！");
+            }else{
+                if(!(new RegExp("^D[0-9]{19}$")).test(thisval)){
+                    layer.msg("任务号不正确，请重新扫描！");
+                }else{
+                    var task_code = $.trim($(this).val());
+                    window.location.href='__ROOT__/admin/agent/view_task/task_code/'+task_code+'.html';
+                }
+            }
+        }
+    });
+    var _type = 'today';
+    var start = {
+        elem:'focus',
+        istoday: true
+        ,choose: function(datas){
+            $('.layui-input-inline').find('.quick').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        }
+    };
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    document.getElementById('endTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    $('.today').click(function () {
+        button_c(this);
+        var date = GetDateStr(0);
+        $('#beginTime').val(date);
+        $('#endTime').val(date);
+        search(1);
+    });
+    $('.yesterday').click(function () {
+        button_c(this);
+        var date = GetDateStr(-1);
+        $('#beginTime').val(date);
+        $('#endTime').val(date);
+        search(1);
+    });
+    function getDate (str){
+        var y = str.getFullYear();
+        var m = Number(str.getMonth())+1;
+        if(m.toString().length<2){
+            m = '0'+m;
+        }
+        var d = str.getDate();
+        if(d.toString().length<2){
+            d = '0'+d;
+        }
+        var date = y + '-' + m + '-' + d;
+        return date;
+    }
+    $('#before').click(function(){
+        var start = $('#beginTime').val();
+        var end = $('#endTime').val();
+        var curDate = '';
+        if(start!=''){
+            curDate = Date.parse(start);
+        }else if(start == '' && end != ''){
+            curDate = Date.parse(end);
+        }else if(start == '' && end == ''){
+            layer.msg('请选择一个时间点！');
+            return false;
+        }
+        var preDate = new Date(curDate - 24*60*60*1000);
+        $('#beginTime').val(getDate(preDate));
+        $('#endTime').val(getDate(preDate));
+        search(1);
+    });
+    $('#after').click(function(){
+        var start = $('#beginTime').val();
+        var end = $('#endTime').val();
+        var curDate = '';
+        if(end!=''){
+            curDate = Date.parse(end);
+        }else if(start != '' && end == ''){
+            curDate = Date.parse(start);
+        }else if(start == '' && end == ''){
+            layer.msg('请选择一个时间点！');
+            return false;
+        }
+        var nextDate = new Date(curDate + 24*60*60*1000);
+        $('#beginTime').val(getDate(nextDate));
+        $('#endTime').val(getDate(nextDate));
+        search(1);
+    });
+
+    $('.search').click(function () {
+        search(1);
+    });
+    function button_c(_this) {
+        $('.layui-input-inline').find('.layui-btn').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        $(_this).removeClass('layui-btn-primary');
+    }
+    function search(curr){
+        var status = $("input[name='status']:checked").val();
+        var begin_time = $.trim($('#beginTime').val()) + ' 00:00:00';
+        var end_time = $.trim($('#endTime').val()) + ' 23:59:59';
+        var bankName = $.trim($('#bankName').val());
+        console.log(begin_time);
+        console.log(end_time);
+        if(!check_date(begin_time,end_time)){
+            return false;
+        }
+        layer.load(2);
+        var url = "__ROOT__/api/bank/tasks_list";
+        var op = {
+            begintime: get_time(begin_time),
+            endtime: get_time(end_time),
+            status: status,
+            bankName: bankName,
+            page: curr || 1,
+            limit: 20
+        };
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var html_str = '';
+            if(result.err_code == 0  && data != null){
+                console.log(result);
+                var statistics = data.statistics;
+                var _all = $('#all');
+                var _init = $('#ready');
+                var _working = $('#working');
+                var _finish = $('#finish');
+                var _canvas = $('#in_rate');
+                var _percent = 0;
+                _canvas.html('');
+                _all.html(statistics.all);
+                _init.html(statistics.ready);
+                _working.html(statistics.working);
+                _finish.html(statistics.finish);
+                if(statistics.all != 0){
+                    _percent = statistics.finish/statistics.all*100;
+                }
+                _canvas.circliful({
+                    animationStep: 10,
+                    foregroundBorderWidth: 15,
+                    backgroundBorderWidth: 15,
+                    foregroundColor:'#1DB3A1',
+                    pointSize:120,
+                    percent: _percent,
+                });
+                if(statistics.ready == 0){
+                    _init.removeClass();
+                    _init.addClass('gary');
+                }else{
+                    _init.removeClass();
+                    _init.addClass('red');
+                }
+                if(statistics.working == 0){
+                    _working.removeClass();
+                    _working.addClass('gary');
+                }else{
+                    _working.removeClass();
+                    _working.addClass('red');
+                }
+                if(statistics.finish == 0){
+                    _finish.removeClass();
+                    _finish.addClass('gary');
+                }else{
+                    _finish.removeClass();
+                    _finish.addClass('green');
+                }
+
+                var tasks = data.tasks;
+                for(var i = 0; i < tasks.length; i++){
+                    var color = '';
+                    if(tasks[i].taskStatus != 3){
+                        color = 'red';
+                    }
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td>"+tasks[i].taskCode+"</td>";
+                    html_str = html_str + "<td>"+tasks[i].out_bank_str+"</td>";
+                    html_str = html_str + "<td>"+tasks[i].in_bank_str+"</td>";
+                    html_str = html_str + "<td class='txtR p-r-20 doVersionOne'>"+tasks[i].task_amount_str+"</td>";
+                    html_str = html_str + "<td class='txtR p-r-20 doVersionOne'>"+tasks[i].track_amount_str+"</td>";
+                    html_str = html_str + "<td class='txtR p-r-20 doVersionOne'>"+tasks[i].taskFreeAmount+"</td>";
+                    html_str = html_str + "<td class='"+color+"'>"+tasks[i].task_status_str+"</td>";
+                    html_str = html_str + "<td class='doVersionOne'>"+tasks[i].backAmount+"</td>";
+                    html_str = html_str + "<td>";
+                    if(tasks[i].is_out == 1){
+                        html_str = html_str + ' <a href="__ROOT__/admin/agent/out_room/task_code/'+tasks[i].taskCode+'.html" class="m-r-10">出库</a> ';
+                    }
+                    if(tasks[i].is_delete == 1){
+                        html_str = html_str + ' <a href="javascript:;" data="'+tasks[i].taskCode+'" class="m-r-10 ajax-del red">删除</a> ';
+                    }
+                    if(tasks[i].is_in == 1){
+                        html_str = html_str + ' <a href="__ROOT__/admin/agent/in_room/task_code/'+tasks[i].taskCode+'.html" class="m-r-10">入库</a> ';
+                    }
+                    html_str = html_str + '<a href="__ROOT__/admin/agent/view_task/task_code/'+tasks[i].taskCode+'.html" >查看</a></td>';
+                    html_str = html_str + '</tr>';
+                }
+                if(html_str == ''){
+                    html_str = '<tr class="low"><td colspan="8" class="text-center">暂无数据</td></tr>';
+                }
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.totalPage, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                //layui.msg(result.err_msg);
+                html_str = '<tr><td colspan="7" class="text-center">数据错误：'+result.err_msg+'</td></tr>';
+            }
+
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+            $("#doConversion").trigger("change");
+
+            /*删除*/
+            $('.ajax-del').on('click', function () {
+                var task_code = $(this).attr('data');
+                layer.open({
+                    shade: false,
+                    content: '确定删除？',
+                    btn: ['确定', '取消'],
+                    yes: function (index) {
+                        $.ajax({
+                            url: "__ROOT__/api/bank/tasks_del",
+                            data:{task_code:task_code},
+                            type: "post",
+                            success: function (info) {
+                                if (info.err_code === 0) {
+                                    setTimeout(function () {
+                                        //location.href = info.url;
+                                        location.reload();
+                                    }, 1000);
+                                    info.err_msg = '删除成功';
+                                }
+                                layer.msg(info.err_msg);
+                            }
+                        });
+                        layer.close(index);
+                    }
+                });
+                return false;
+            });
+
+        });
+    };
+    //运行
+    search(1,$('#beginTime').val());
+    //元万元亿切换
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+
+        $('.doVersionOne').each(function(i,e){
+            if (!$(this).attr('number')) {
+                $(this).attr('number',$(this).text());
+            }
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+            
+            $(this).text(numberNew);                
+        });
+    });
+</script>
+<script src="__JS__/jquery.circliful.min.js"></script>
+{/block}

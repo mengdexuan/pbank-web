@@ -1,0 +1,514 @@
+{extend name="base" /}
+{block name="body"}
+<style>
+    .tips {
+        display: inline-block;
+        margin: 0 0 0 20px;
+        color: #EE713B;
+    }
+    .task-type{
+        height: 36px;
+        line-height: 36px;
+    }
+    .task-type label{
+        cursor: pointer;
+    }
+    .task-type.layui-input-inline{
+        width: 105px;
+        margin-right: 0;
+    }
+    .layui-form-label{
+        width: 90px;
+    }
+    .amount-table thead,
+    .amount-table tfoot{
+        display: block;
+        width: 400px;
+    }
+    .amount-table tbody {
+        height: 172px;
+        overflow-y:scroll;
+        display:block
+    }
+    .amount-table th,
+    .amount-table tr {
+        text-align: center !important;
+    }
+    .input-box input {
+        width: 18px;
+        height: 18px;
+        float: left;
+        margin: 9px 3px 0 0
+    }
+    .layui-table thead tr:not(first-child) {
+        background-color: #fff;
+    }
+    #save_dialog select {
+        min-width: 100px;
+        height: 30px;
+        margin: 0 10px 0 0;
+        padding: 0 5px;
+        line-height: 30px;
+        border: 1px solid #e6e6e6;
+        background: #fff;
+        border-radius: 4px;
+    }
+</style>
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <form class="" id="search" action=""  style="display:block;width:100%;background:#fff;position:fixed;top:45px;padding-top:15px;z-index:1000;">
+                <div class="layui-form-item">
+                    <!--<div class="layui-input-inline" style="width: 70px;">
+                        <button type="button" class="layui-btn layui-btn-primary layui-btn-small quick yesterday">昨天</button>
+                    </div>
+                    <div class="layui-input-inline" style="width: 70px;">
+                        <button type="button" class="layui-btn layui-btn-small quick today">今天</button>
+                    </div>-->
+                    <div class="layui-input-inline w82">
+                        <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="before">前一天</a>
+                    </div>
+                    <div class="layui-input-inline date-box">
+                        <input type="text" name="beginTime" placeholder="开始日期" id="beginTime"  value="{$query_date}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                    </div>
+                    <div class="layui-input-inline wa date-center">-</div>
+                    <div class="layui-input-inline date-box">
+                        <input type="text" name="beginTime" placeholder="End" id="endTime"  value=""  autocomplete="off" class="layui-input laydate-icon choice_date">
+                    </div>
+                    <div class="layui-input-inline w82">
+                        <a href="javascript:;" class="layui-btn layui-btn-small layui-btn-primary" id="after">后一天</a>
+                    </div>
+                    <div class="layui-input-inline layui-form" style="width: 141px;">
+                        <select name="bankName" lay-verify="required" lay-search id="test_user"  lay-filter="test_user" >
+                            <option value="">选择或输入</option>
+                        </select>
+                    </div>
+                    <div class="layui-input-inline w70">
+                        <button type="button" class="layui-btn layui-btn-small search">查询</button>
+                    </div>
+                    <br><br><br>
+                    <div class="layui-input-inline task-type inline-block-mr">
+                        <label><input type="radio" name="status" value="" checked> 全部</label>
+                    </div>
+                    <div class="layui-input-inline task-type inline-block-mr" >
+                        <label><input type="radio" name="status" value="0"> 待审核</label>
+                    </div>
+                    <div class="layui-input-inline task-type inline-block-mr" >
+                        <label><input type="radio" name="status" value="1"> 审核通过</label>
+                    </div>
+                    <div class="layui-input-inline task-type inline-block-mr" >
+                        <label><input type="radio" name="status" value="2"> 审核拒绝</label>
+                    </div>
+                    <div class="layui-input-inline task-type inline-block-mr" >
+                        <label><input type="radio" name="status" value="3"> 人行终止</label>
+                    </div>
+                    <br/><br/><br/>
+                    <div class="layui-input-inline task-type inline-block-mr">
+                        <label><input type="radio" name="planType" value="" checked> 全部</label>
+                    </div>
+                    <div class="layui-input-inline task-type inline-block-mr" >
+                        <label><input type="radio" name="planType" value="1"> 被代理行取款</label>
+                    </div>
+                    <div class="layui-input-inline task-type inline-block-mr" >
+                        <label><input type="radio" name="planType" value="0"> 被代理行交款</label>
+                    </div>
+                </div>
+            </form>
+            <div class="title-box" style="margin: 60px 0 10px 0;">
+                <div class="title">代理任务概览</div>
+            </div>
+            <div style="margin-top:70px;">
+                <label class="layui-form-label" style="padding:9px 15px 0 0;text-align:left;margin-right: -39px;">预约单号</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="task_code" autocomplete="off" placeholder="" value="" id="data-no-scan" class="layui-input data-no-scan task_code">
+                </div>
+                <span class="tips">请扫描预约号</span>
+            </div>
+            <div class="layui-inline" style="height: 32px;float: right; margin-top: -31px; margin-bottom: 39px; margin-right: 207px;">
+                <label class="layui-form-label" style="text-align:left;margin-right: -65px;">单位：</label>
+                <div class="layui-input-inline">
+                    <select class="layui-input" style="cursor: pointer;" id="doConversion">
+                        <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元</option>
+                        <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元</option>
+                    </select>
+                </div>
+            </div>
+            <table class="new-table" id="data_table">
+<!--                 <div style="margin-top: 20px;margin-left: 18px;">
+                    被代理行取款：网点数量：<span id="inBankCount">0</span>家   金额合计：<span id="inBankMoney" class="doVersionOne">0元</span>  |  被代理行交款：网点数量：<span id="outBankCount">0</span>家   金额合计：<span id="outBankMoney" class="doVersionOne">0元</span>
+                </div> -->
+                <thead>
+                <tr>
+                    <th>预约单号</th>
+                    <th>预约日期</th>
+                    <th>被代理行名称</th>
+                    <th>代理行名称</th>
+                    <th>业务类型</th>
+                    <th class="txtR p-r-20">预约总金额</th>
+                    <th class="txtR p-r-20">双流同步</th>
+                    <th class="txtR p-r-20">非双流同步</th>
+                    <th>状态</th>
+                    <!-- <th>回退金额</th> -->
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr class="low"><td colspan="11" class="text-center">查询中</td></tr>
+                </tbody>
+            </table>
+            <div id="page_box"></div>
+        </div>
+    </div>
+</div>
+<input type="hidden" name="bank_code" value="{$cur_bank['bank_code']}">
+{/block}
+{block name="script"}
+<script src="__JS__/layui/layui.js"></script>
+<script src="__JS__/pinyin.js"></script>
+<script src="__JS__/initials.js"></script>
+<script>
+    layui.use('form', function() {
+        form = layui.form();
+        //渲染下拉搜索框
+        $.post('__ROOT__/api/bank/query_bank_key',{},function(data){
+
+            if(data.err_code == 0){
+                var data = data.data.bank_key;
+                var len = data.length;
+                var sel = '<option value="">全部</option>';
+                for(var i=0;i<len;i++){
+                    sel+='<option value="'+data[i].bank_name+'" >'+data[i].bank_name+'</option>'
+                }
+                $('#test_user').append(sel);
+                form.render(); //更新全部
+            }
+        });
+    });
+    $(document).on('click','.stop',function(){
+        var task_code = $(this).attr('code');
+        var changeReason = '';
+        var auditor = "<?php echo think\Session::get('admin_name');?>";
+        var html = '是否确定终止该笔调款？';
+        layer.msg(html, {
+            time: 0 //不自动关闭
+            ,shade:[0.8, '#393D49']
+            ,btn: ['确认', '取消']
+            ,yes: function(index){
+                layer.load(2);
+                $.ajax({
+                    url: '__ROOT__/api/bank/dstop',
+                    data:{
+                        planCodeList: task_code,
+                        auditor: auditor,
+                        planStatus: '3',
+                        billType:'1'
+                    },
+                    type: "post",
+                    data_type:'json',
+                    success:function(res){
+                        if (res.success) {
+                            layer.msg('终止成功');
+                        }else{
+                            layer.msg(res.msg);return false;
+                        }
+                        location.href='';
+                    },
+                    error:function(){
+                        layer.msg('稍后尝试');
+                    }
+                });
+                resetload();
+            }
+        });
+    });
+    function resetload(){
+        setTimeout(function(){
+            layer.closeAll('loading');
+        }, 2000);
+    }
+    var is_all = false;
+    form.on('switch(switchTest)', function(data){
+        is_all = data.elem.checked;
+        search();
+    });
+    $("input[name='status']").change(function(){
+        search();
+    });
+    $("input[name='planType']").change(function(){
+        search();
+    });
+    // 获取焦点
+    // $('#data-no-scan').focus();
+    $('body').click(function(){
+        if($('#data-no-scan').is(':focus')){
+            $('.tips').show();
+        }else {
+            $('.tips').hide();
+        }
+    });
+    $('.task_code').on("keypress", function(e){
+        var kc = e.which || e.keyCode;
+        if(kc == 13){
+            var thisval = $.trim($(this).val());
+            try{
+                thisval = JSON.parse(thisval).bc;
+                if($.trim(thisval) != ''){
+                    $(this).val(thisval);
+                }
+            }catch(e){
+
+            }
+            if(thisval == ""){
+                layer.msg("请扫描预约号！");
+            }else{
+                var task_code = $.trim($(this).val());
+                window.location.href='__ROOT__/admin/agent/view_appoint/task_code/'+task_code+'.html';
+                // if(!(new RegExp("^D[0-9]{19}$")).test(thisval)){
+                //     layer.msg("预约号不正确，请重新扫描！");
+                // }else{
+                //     var task_code = $.trim($(this).val());
+                //     window.location.href='__ROOT__/admin/agent/view_appoint/task_code/'+task_code+'.html';
+                // }
+            }
+        }
+    });
+    var _type = 'today';
+    var start = {
+        elem:'focus',
+        istoday: true
+        ,choose: function(datas){
+            $('.layui-input-inline').find('.quick').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        }
+    };
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    var start2 = {
+        min: laydate.now(0)
+        ,max: '2099-06-16 23:59:59'
+        ,istoday: true
+        ,choose: function(datas){
+        }
+    };
+    document.getElementById('endTime').onclick = function(){
+        start2.elem = this;
+        laydate(start2);
+    };
+    $('.today').click(function () {
+        button_c(this);
+        var date = GetDateStr(0);
+        $('#beginTime').val(date);
+        $('#endTime').val(date);
+        search(1);
+    });
+    $('.yesterday').click(function () {
+        button_c(this);
+        var date = GetDateStr(-1);
+        $('#beginTime').val(date);
+        $('#endTime').val(date);
+        search(1);
+    });
+    function getDate (str){
+        var y = str.getFullYear();
+        var m = Number(str.getMonth())+1;
+        if(m.toString().length<2){
+            m = '0'+m;
+        }
+        var d = str.getDate();
+        if(d.toString().length<2){
+            d = '0'+d;
+        }
+        var date = y + '-' + m + '-' + d;
+        return date;
+    }
+    $('#before').click(function(){
+        var start = $('#beginTime').val();
+        var end = $('#endTime').val();
+        var curDate = '';
+        if(start!=''){
+            curDate = Date.parse(start);
+        }else if(start == '' && end != ''){
+            curDate = Date.parse(end);
+        }else if(start == '' && end == ''){
+            layer.msg('请选择一个时间点！');
+            return false;
+        }
+        var preDate = new Date(curDate - 24*60*60*1000);
+        $('#beginTime').val(getDate(preDate));
+        $('#endTime').val(getDate(preDate));
+        search(1);
+    });
+    $('#after').click(function(){
+        var start = $('#beginTime').val();
+        var end = $('#endTime').val();
+        var curDate = '';
+        if(end!=''){
+            curDate = Date.parse(end);
+        }else if(start != '' && end == ''){
+            curDate = Date.parse(start);
+        }else if(start == '' && end == ''){
+            layer.msg('请选择一个时间点！');
+            return false;
+        }
+        var nextDate = new Date(curDate + 24*60*60*1000);
+        $('#beginTime').val(getDate(nextDate));
+        $('#endTime').val(getDate(nextDate));
+        search(1);
+    });
+
+    $('.search').click(function () {
+        search(1);
+    });
+    function button_c(_this) {
+        $('.layui-input-inline').find('.layui-btn').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        $(_this).removeClass('layui-btn-primary');
+    }
+    function search(curr,_init){
+        var status = $("input[name='status']:checked").val();
+        var planType = $("input[name='planType']:checked").val();
+        var begin_time = $.trim($('#beginTime').val());
+        var end_time = $.trim($('#endTime').val());
+        if (_init === 0) {
+            var end_time = '';
+        }
+        var bankName = $.trim($("#test_user option:selected").val());
+        var bankCode = $('input[name="bank_code"]').val();
+
+        layer.load(2);
+        var url = "__ROOT__/api/bank/tasks_appoint";
+        var op = {
+            planTimeStart: begin_time,
+            planTimeEnd: end_time,
+            planStatusList: status,
+            bankName: bankName,
+            planType: planType,
+            bankCode: bankCode,
+            pageNo: curr || 1,
+            pageSize: 20
+        };
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            var html_str = '';
+            if(result.success  && data != null){
+                $('#inBankMoney').attr('number',data.countInfo.inBankMoney);
+                $('#inBankCount').html(data.countInfo.inBankCount);
+                $('#outBankMoney').attr('number',data.countInfo.outBankMoney);
+                $('#outBankCount').html(data.countInfo.outBankCount);
+                var tasks = data.pageInfo.content;
+                for(var i = 0; i < tasks.length; i++){
+                    var color = '';
+                    if(tasks[i].planStatus == 3){
+                        color = 'red';
+                    }
+                    if (tasks[i].planStatus != 4) {
+                        html_str = html_str + "<tr class='low'>";
+                        html_str = html_str + "<td>"+tasks[i].planCode+"</td>";
+                        html_str = html_str + "<td>"+tasks[i].planTime+"</td>";
+                        html_str = html_str + "<td>"+tasks[i].bankCodeName+"</td>";
+                        html_str = html_str + "<td>"+tasks[i].toBankCodeName+"</td>";
+                        html_str = html_str + "<td>"+tasks[i].plan_type_str
+                        html_str = html_str + "<td class='txtR p-r-20 doVersionOne'>"+tasks[i].planAmount+"</td>";
+                        html_str = html_str + "<td class='txtR p-r-20 doVersionOne'>"+tasks[i].doubleAmount+"</td>";
+                        html_str = html_str + "<td class='txtR p-r-20 doVersionOne'>"+tasks[i].freeAmount+"</td>";
+                        html_str = html_str + "<td class='"+color+"'>"+tasks[i].plan_status_str+"</td>";
+                        html_str = html_str + "<td>";
+                        if (tasks[i].planStatus == 0) {
+                            html_str = html_str + ' <a href="javascript:;" class="m-r-10 stop" code="'+tasks[i].planCode+'">终止</a>';
+                        }
+                        if (tasks[i].taskCode) {
+                            html_str = html_str + '<a href="__ROOT__/admin/agent/view_task/task_code/'+tasks[i].taskCode+'.html" class="m-r-10">任务详情</a>';
+                        }
+                        html_str = html_str + '<a href="__ROOT__/admin/agent/view_appoint/task_code/'+tasks[i].planCode+'.html" class="m-r-10">预约详情</a>';
+                        html_str = html_str + '</td></tr>';                        
+                    }
+                }
+                if(html_str == ''){
+                    html_str = '<tr class="low"><td colspan="14" class="text-center">暂无数据</td></tr>';
+                }
+                laypage({
+                    cont: 'page_box', //容器。值支持id名、原生dom对象，jquery对象。【如该容器为】：<div id="page1"></div>
+                    pages: data.pageInfo.totalPages, //通过后台拿到的总页数
+                    curr: curr || 1, //当前页
+                    jump: function(obj, first){ //触发分页后的回调
+                        if(!first){ //点击跳页触发函数自身，并传递当前页：obj.curr
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else{
+                html_str = '<tr><td colspan="10" class="text-center">数据错误：'+result.msg+'</td></tr>';
+            }
+
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+            $("#doConversion").trigger("change");
+
+            /*删除*/
+            $('.ajax-del').on('click', function () {
+                var task_code = $(this).attr('data');
+                layer.open({
+                    shade: false,
+                    content: '确定删除？',
+                    btn: ['确定', '取消'],
+                    yes: function (index) {
+                        $.ajax({
+                            url: "__ROOT__/api/bank/tasks_del",
+                            data:{task_code:task_code},
+                            type: "post",
+                            success: function (info) {
+                                if (info.err_code === 0) {
+                                    setTimeout(function () {
+                                        //location.href = info.url;
+                                        location.reload();
+                                    }, 1000);
+                                    info.err_msg = '删除成功';
+                                }
+                                layer.msg(info.err_msg);
+                            }
+                        });
+                        layer.close(index);
+                    }
+                });
+                return false;
+            });
+
+        });
+    };
+    //运行
+    search(1,0);
+    //元万元亿切换
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+
+        $('.doVersionOne').each(function(i,e){
+            if (!$(this).attr('number')) {
+                $(this).attr('number',$(this).text());
+            }
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+
+            $(this).text(numberNew);
+        });
+    });
+</script>
+<script src="__JS__/jquery.circliful.min.js"></script>
+{/block}

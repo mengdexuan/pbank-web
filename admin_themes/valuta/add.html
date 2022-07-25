@@ -1,0 +1,106 @@
+{extend name="base" /}
+
+{block name="css"}
+<style>
+    .layui-form-label{
+        width: 90px;
+    }
+    .layui-form-item .layui-input-inline{
+        width: 400px;
+    }
+</style>
+{/block}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <span class="layui-breadcrumb">
+            <a href="{:url('admin/valuta/index')}">币值列表</a>
+            <a><cite>添加币值</cite></a>
+        </span>
+        <div class="title-box">
+            <div class="title">添加币值</div>
+        </div>
+        <div class="layui-tab-content">
+            <div class="layui-tab-item layui-show">
+                <form class="layui-form form-container" action="{:url('/api/bank/add_valuta_info')}" method="post">
+
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">币值名称</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="valuta_name" lay-verify="required" placeholder="请输入币值名称" autocomplete="off" class="layui-input">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">币值</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="valuta_value" lay-verify="required" placeholder="请输入币值" autocomplete="off" class="layui-input">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">是否双流同步</label>
+                        <div class="layui-input-inline">
+                            <select name="valuta_flag" id="valuta_flag"  style="height: 32px">
+                            <option value="0" >非双流同步</option>
+                            <option value="1" >双流同步</option>
+                            <option value="2" selected>不限制</option>
+                            </select>
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">币值类型</label>
+                        <div class="layui-input-inline">
+                            <select name="use_type" id="use_type"  style="height: 32px">
+                            <option value="0" >跨行调款</option>
+                            <option value="1" >库存上报</option>
+                            <option value="2" >上交残损券</option>
+                            </select>
+                        </div>
+                        <div class="layui-form-mid layui-word-aux"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">排序</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="valuta_index" lay-verify="required" value="0" placeholder="请输入排序" autocomplete="off" class="layui-input">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux">数值越大排序越靠前</div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <div class="layui-input-block">
+                            <button class="layui-btn" lay-submit lay-filter="*">保存</button>
+                            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+
+    form.on('submit(*)', function(data){
+        $.ajax({
+            url: data.form.action,
+            type: data.form.method,
+            data: $(data.form).serialize(),
+            success: function (info) {
+                if (info.err_code == 0) {
+                    setTimeout(function () {
+                        location.href = info.url;
+                    }, 1000);
+                    info.err_msg = '提交成功'
+                }
+                layer.msg(info.err_msg);
+            }
+        });
+
+        return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+    });
+</script>
+{/block}

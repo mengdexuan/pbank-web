@@ -1,0 +1,196 @@
+{extend name="base" /}
+{block name="body"}
+<div class="layui-body">
+    <!--tab标签-->
+    <div class="layui-tab layui-tab-brief">
+        <div class="layui-tab-content">
+            <form class="" id="search" action="">
+                <div class="layui-form-item">
+                    <div style="display:inline-block;float:left;">
+                        <div class="layui-input-inline wa date-center">银行名称:</div>
+                        <div class="layui-input-inline wa mr20">
+                            <select name="bankName" id="" class="new-select">
+                                <option value="">全部</option>
+                                {volist name="$banks" id="vo"}
+                                <option data="{$vo.bank_code}" value="{$vo.bank_net_code}">{$vo.bank_name}</option>
+                                {/volist}
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display:inline-block;float:left;">
+                        <div class="layui-input-inline wa date-center">业务时间:</div>
+                        <div class="layui-input-inline date-box">
+                            <input type="text" name="beginTime" placeholder="选择开始日期" id="beginTime"  value="{$query_date}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                        </div>
+                        <div class="layui-input-inline wa date-center">-</div>
+                        <div class="layui-input-inline date-box mr20">
+                            <input type="text" name="beginTime" placeholder="选择结束日期" id="endTime"  value="{$query_date}"  autocomplete="off" class="layui-input laydate-icon choice_date">
+                        </div>
+                    </div>
+                    <div class="layui-inline" style="height: 32px;">
+                        <label class="layui-form-label" style="text-align:left;margin-right: -58px;">单位：</label>
+                        <div class="layui-input-inline">
+                            <select class="layui-input" style="cursor: pointer;width: 68px;" id="doConversion">
+                                <option value="y" <?php echo think\Cookie::get("parameDoConversion") == "元"?"selected":"";?>>元</option>
+                                <option value="w" <?php echo think\Cookie::get("parameDoConversion") == "万元"?"selected":"";?>>万元</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-input-inline" style="width: 152px;float: right;">
+                        <button type="button" class="layui-btn layui-btn-small search">查询</button>
+                        <button type="button" class="layui-btn layui-btn-primary layui-btn-small reset">重置</button>
+                    </div>
+                </div>
+            </form>
+            <div class="m-10-0">支出总金额：<span class="bankOutTotal doVersionOne">0</span>&nbsp;&nbsp;&nbsp;&nbsp;坐支金额：<span class="bankInAndOut doVersionOne">0</span>&nbsp;&nbsp;&nbsp;&nbsp;占比<span class="per">0</span>%</div>
+            <table class="new-table" id="data_table">
+                <thead>
+                    <tr>
+                        <th>银行名称</th>
+                        <th>总支出金额</th>
+                        <th>坐支金额</th>
+                        <th>占比</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <div id="page_box"></div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    /*重置功能*/
+    $('.reset').click(function(){
+        $('select[name="bankName"]').val('');
+        $('#beginTime').val('');
+        $('#endTime').val('');
+    });
+
+    /*日期选择*/
+    var _type = 'today';
+    var start = {
+        elem:'focus',
+        istoday: true
+        ,choose: function(datas){
+            $('.layui-input-inline').find('.quick').removeClass('layui-btn-primary').addClass('layui-btn-primary');
+        }
+    };
+    document.getElementById('beginTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    document.getElementById('endTime').onclick = function(){
+        start.elem = this;
+        laydate(start);
+    };
+    /*列表获取*/
+    function search(curr){
+        var bankCode = $('select[name="bankName"]').val();
+        var startTime = $('#beginTime').val();
+        var endTime = $('#endTime').val();
+        if(get_time(startTime) > get_time(endTime)){
+            layer.msg('开始时间不能大于结束时间');
+            return false;
+        }
+        if(startTime == ''){
+            layer.msg('请选择开始时间！');
+            return false;
+        }
+        if(endTime == ''){
+            layer.msg('请选择结束时间！');
+            return false;
+        }
+        bankCode += '';
+        var startTimeNew = startTime + ' 00:00:00';
+        var endTimeNew = endTime + ' 23:59:59';
+        layer.load(2);
+        var url = "__ROOT__/api/inout/all_bank_data";
+        var op = {
+            bankCode: bankCode,
+            startTime: startTimeNew,
+            endTime: endTimeNew,
+            page: curr || 1,
+            limit: 20
+        };
+        data_page(url,op,function (result) {
+            layer.closeAll('loading');
+            var data = result.data;
+            console.log(data);
+            $('.bankOutTotal').html(data.bankOutTotal);
+            $('.bankInAndOut').html(data.bankInAndOut);
+            $('.per').html(data.per);
+            var html_str = '';
+            if(result.errorCode == 0  && data != null){
+                var dataList = data.list;
+                for(var i = 0; i < dataList.length; i++){
+                    html_str = html_str + "<tr class='low'>";
+                    html_str = html_str + "<td data='"+dataList[i].bankCode+"'>"+dataList[i].bankName+"</td>";
+                    html_str = html_str + "<td class='doVersionOne'>"+dataList[i].bankOutTotal+"</td>";
+                    html_str = html_str + "<td class='doVersionOne'>"+dataList[i].inOutTotal+"</td>";
+                    html_str = html_str + "<td>"+dataList[i].per+"%</td>";
+                    html_str = html_str + "<td><a href='__ROOT__/admin/dot_pay/index/bankCode/"+dataList[i].bankCode+"/startTime/"+startTime+"/endTime/"+endTime+".html'>查看</a></td>";
+                    html_str = html_str + '</tr>';
+                }
+                if(html_str == ''){
+                    html_str = '<tr class="low"><td colspan="5" class="text-center">暂无数据</td></tr>';
+                }
+                laypage({
+                    cont: 'page_box',
+                    pages: data.totalPage,
+                    curr: curr || 1,
+                    jump: function(obj, first){
+                        if(!first){
+                            search(obj.curr);
+                        }
+                    }
+                });
+            }else if(result.errorCode == 0  && data == null){
+                html_str = '<tr class="low"><td colspan="6" class="text-center">暂无数据</td></tr>';
+            }else{
+                html_str = '<tr class="low"><td colspan="6" class="text-center">数据错误：'+result.err_msg+'</td></tr>';
+            }
+            $('#data_table').find('tbody').html(html_str);
+            $('#data_table').find('tbody').hide();
+            $('#data_table').find('tbody').fadeIn(500);
+            $("#doConversion").trigger("change");
+        });
+    };
+    //运行
+    /*search();*/
+    $('.search').click(function(){
+        search();
+    });
+    //元万元亿切换
+    $('#doConversion').change(function(){
+        var thisVal = $(this).val();
+        if (thisVal == 'yi') {
+            var word = '亿';
+            var rate = 100000000;
+        }else if(thisVal == 'w'){
+            var word = '万元';
+            var rate = 10000;
+        }else{
+            var word  = '元';
+            var rate = 1;
+        }
+
+        $('.doVersionOne').each(function(i,e){
+            if (!$(this).attr('number')) {
+                $(this).attr('number',$(this).text());
+            }
+            var numberOld = $.trim($(this).attr('number').replace(/[\u4e00-\u9fa5]/g, ""));
+            var numberOld = (Number(numberOld.replace(/,/g, ""))*10000)/(Number(rate)*10000);
+            if (numberOld >= 1) {
+                var numberNew = number_format(numberOld,2,'.',',') + word;
+            }else{
+                var numberNew = numberOld + word;
+            }
+            
+            $(this).text(numberNew);                
+        });
+    });
+</script>
+{/block}
